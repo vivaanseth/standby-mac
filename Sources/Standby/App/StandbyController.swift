@@ -33,7 +33,7 @@ final class StandbyController: ObservableObject {
     let photos: PhotoRotator
     let power: PowerService
 
-    var isShowing: Bool { overlay.isVisible }
+    var isShowing: Bool { overlay.isVisible || companion.isVisible }
 
     private let tickInterval: TimeInterval = 0.25
     private var timer: Timer?
@@ -50,6 +50,10 @@ final class StandbyController: ObservableObject {
     private var lastLoadSample = Date.distantPast
     private var companionGraceUntil = Date.distantPast
     private var companionTravel: CGFloat = 0
+    /// Input only wakes the external display once this is set: after you've
+    /// let go of the mouse and keyboard for a moment since it appeared.
+    private var companionArmed = false
+    private var companionWakeTravel: CGFloat = 30
     private var anyAssertionCheck: (date: Date, blocked: Bool)?
     private var lastStatusUpdate = Date.distantPast
     private let awake = DisplayAwakeAssertion()
@@ -125,6 +129,8 @@ final class StandbyController: ObservableObject {
 
     // MARK: Commands
 
+    /// Starts StandBy everywhere at once: the built-in display (or the main
+    /// display with the lid closed) and, if enabled, the external displays.
     func startNow() {
         if let ctx = DisplayLocator.current() {
             shownWithoutBuiltIn = false
@@ -134,10 +140,16 @@ final class StandbyController: ObservableObject {
             shownWithoutBuiltIn = true
             show(DisplayLocator.mainDisplay(), manual: true)
         }
+        let config = store.config
+        guard config.externalEnabled else { return }
+        let externals = DisplayLocator.externalDisplays().filter {
+            CGDisplayIsAsleep($0) == 0 && !(overlay.isVisible && $0 == overlay.displayID)
+        }
+        if !externals.isEmpty { showCompanion(on: externals, config: config, manual: true) }
     }
 
     func toggle() {
-        overlay.isVisible ? dismiss() : startNow()
+        isShowing ? dismissAll() : startNow()
     }
 
     func pause(for duration: TimeInterval?) {
@@ -355,9 +367,14 @@ final class StandbyController: ObservableObject {
                 power.refreshLoad()
             }
             guard now >= companionGraceUntil else { return }
+            if !companionArmed {
+                // Still moving from starting it by hand: wait until you settle.
+                if InputActivity.secondsSinceAnyInput() >= 0.8 { companionArmed = true }
+                return
+            }
             companionTravel += movement
             let types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel]
-            if companionTravel > 30 || types.contains(where: { InputActivity.happened($0, within: dt) }) {
+            if companionTravel > companionWakeTravel || types.contains(where: { InputActivity.happened($0, within: dt) }) {
                 hideCompanion()
             }
             return
@@ -371,11 +388,17 @@ final class StandbyController: ObservableObject {
         showCompanion(on: externals, config: config)
     }
 
-    private func showCompanion(on ids: [CGDirectDisplayID], config: StandbyConfig) {
+    private func showCompanion(on ids: [CGDirectDisplayID], config: StandbyConfig, manual: Bool = false) {
         let wasVisible = companion.isVisible
         companion.show(on: ids, config: config)
-        companionGraceUntil = Date().addingTimeInterval(0.6)
+        // A manual start (menu or shortcut) gets longer, so the hand that
+        // just triggered it doesn't immediately take it down again.
+        companionGraceUntil = Date().addingTimeInterval(manual ? 1.5 : 0.6)
         companionTravel = 0
+        if !wasVisible {
+            companionArmed = false
+            companionWakeTravel = manual ? 80 : 30
+        }
         if !wasVisible {
             refreshLiveData(now: Date(), force: !overlay.isVisible)
             let wantsPhotos = config.externalStyle == .photos || (config.externalStyle == .widgets && config.uses(.photo))
