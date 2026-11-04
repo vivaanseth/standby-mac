@@ -33,6 +33,19 @@ struct MoonPhase {
         }
     }
 
+    var symbol: String {
+        switch name {
+        case "Waxing Crescent": "moonphase.waxing.crescent"
+        case "First Quarter": "moonphase.first.quarter"
+        case "Waxing Gibbous": "moonphase.waxing.gibbous"
+        case "Full Moon": "moonphase.full.moon"
+        case "Waning Gibbous": "moonphase.waning.gibbous"
+        case "Last Quarter": "moonphase.last.quarter"
+        case "Waning Crescent": "moonphase.waning.crescent"
+        default: "moonphase.new.moon"
+        }
+    }
+
     var daysToFull: Double { (fraction < 0.5 ? 0.5 - fraction : 1.5 - fraction) * Self.synodicMonth }
 }
 

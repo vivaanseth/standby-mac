@@ -12,6 +12,8 @@ struct SettingsView: View {
                 .tabItem { Label("General", systemImage: "gearshape") }
             ViewsSettings(store: store)
                 .tabItem { Label("Views", systemImage: "rectangle.3.group") }
+            ExternalSettings(store: store)
+                .tabItem { Label("External", systemImage: "display.2") }
             WidgetsSettings(store: store)
                 .tabItem { Label("Widgets", systemImage: "square.grid.2x2") }
             ClockSettings(store: store)
@@ -121,6 +123,67 @@ struct GeneralSettings: View {
         }
         .formStyle(.grouped)
         .onAppear { loginEnabled = LoginItem.isEnabled }
+    }
+}
+
+// MARK: External
+
+struct ExternalSettings: View {
+    @ObservedObject var store: ConfigStore
+
+    var body: some View {
+        Form {
+            Section {
+                ExternalPreviewCard(store: store)
+                Picker("Show", selection: $store.config.externalStyle) {
+                    ForEach(ExternalStyle.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                Text(store.config.externalStyle.summary).settingsFootnote()
+                if store.config.externalStyle == .clock {
+                    Picker("Clock face", selection: $store.config.externalClockStyle) {
+                        ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
+                    }
+                }
+            }
+            Section {
+                Toggle("Show on external displays when nothing is in use", isOn: $store.config.externalEnabled)
+                Picker("Start after your Mac is idle for", selection: $store.config.externalIdleDelay) {
+                    ForEach(delayChoices, id: \.self) { Text(delayLabel($0)).tag($0) }
+                }
+                .disabled(!store.config.externalEnabled)
+                Toggle("Use as a screen saver when the lid is closed", isOn: $store.config.clamshellEnabled)
+                    .disabled(!store.config.externalEnabled)
+            } header: {
+                Text("When Neither Display Is in Use")
+            } footer: {
+                Text("While you're using the external display, only the built-in display goes into Standby. Once there's no input at all, external displays get this screen too. Any key, click, scroll or pointer movement brings them back; the built-in display stays in Standby until you use it.")
+                    .settingsFootnote()
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+/// A live 16:9 miniature of the external display.
+struct ExternalPreviewCard: View {
+    @ObservedObject var store: ConfigStore
+    @StateObject private var nav = StandbyNavigator()
+
+    var body: some View {
+        let config = store.config
+        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: 1)) { timeline in
+            CompanionScene(date: timeline.date, config: config, nav: nav)
+        }
+        .aspectRatio(16 / 9, contentMode: .fit)
+        .frame(maxWidth: 520)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        .onAppear { nav.prepareForShow(config.companionConfig) }
+        .onChange(of: config) { nav.prepareForShow(config.companionConfig) }
     }
 }
 

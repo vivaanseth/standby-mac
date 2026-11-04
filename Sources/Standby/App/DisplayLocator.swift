@@ -35,6 +35,23 @@ enum DisplayLocator {
         return DisplayContext(displayID: target, bounds: CGDisplayBounds(target), mode: mode)
     }
 
+    /// Active displays other than the built-in one, one per mirror set, and
+    /// not one the built-in display is mirroring (StandBy already covers that).
+    static func externalDisplays() -> [CGDirectDisplayID] {
+        var count: UInt32 = 0
+        guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else { return [] }
+        var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
+        guard CGGetActiveDisplayList(count, &ids, &count) == .success else { return [] }
+        let builtIn = ids.first { CGDisplayIsBuiltin($0) != 0 }
+        let builtInMaster = builtIn.map { CGDisplayMirrorsDisplay($0) }
+        return ids.filter { id in
+            CGDisplayIsBuiltin(id) == 0
+                && CGDisplayMirrorsDisplay(id) == kCGNullDirectDisplay
+                && id != builtInMaster
+        }
+        .sorted()
+    }
+
     /// Used for a manual start when the built-in display is closed.
     static func mainDisplay() -> DisplayContext {
         let id = CGMainDisplayID()

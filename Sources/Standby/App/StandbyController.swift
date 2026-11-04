@@ -27,6 +27,7 @@ final class StandbyController: ObservableObject {
     let store: ConfigStore
     let nav: StandbyNavigator
     let overlay: OverlayController
+    let companion: CompanionController
     let weather: WeatherService
     let calendar: CalendarService
     let photos: PhotoRotator
@@ -47,6 +48,9 @@ final class StandbyController: ObservableObject {
     private var shownAt = Date()
     private var lastMinute = 0
     private var lastLoadSample = Date.distantPast
+    private var companionGraceUntil = Date.distantPast
+    private var companionTravel: CGFloat = 0
+    private var anyAssertionCheck: (date: Date, blocked: Bool)?
     private var lastStatusUpdate = Date.distantPast
     private let awake = DisplayAwakeAssertion()
     private var observers: [NSObjectProtocol] = []
@@ -60,6 +64,13 @@ final class StandbyController: ObservableObject {
         self.photos = photos
         self.power = power
         overlay = OverlayController(store: store, nav: nav) { root in
+            AnyView(root
+                .environmentObject(weather)
+                .environmentObject(calendar)
+                .environmentObject(photos)
+                .environmentObject(power))
+        }
+        companion = CompanionController(store: store) { root in
             AnyView(root
                 .environmentObject(weather)
                 .environmentObject(calendar)
@@ -86,7 +97,7 @@ final class StandbyController: ObservableObject {
         }
         for name in [NSWorkspace.willSleepNotification, NSWorkspace.sessionDidResignActiveNotification] {
             observers.append(ws.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.dismiss(animated: false) }
+                MainActor.assumeIsolated { self?.dismissAll(animated: false) }
             })
         }
         observers.append(DistributedNotificationCenter.default().addObserver(forName: .init("com.apple.screenIsLocked"), object: nil, queue: .main) { [weak self] _ in
@@ -100,7 +111,7 @@ final class StandbyController: ObservableObject {
             MainActor.assumeIsolated {
                 switch command {
                 case .show: if self?.isShowing == false { self?.startNow() }
-                case .hide: self?.dismiss()
+                case .hide: self?.dismissAll()
                 case .toggle: self?.toggle()
                 case nil: break
                 }
@@ -140,11 +151,17 @@ final class StandbyController: ObservableObject {
         updateStatus(force: true)
     }
 
+    /// Takes StandBy down everywhere: built-in and external displays.
+    func dismissAll(animated: Bool = true) {
+        dismiss(animated: animated)
+        hideCompanion(animated: animated)
+    }
+
     func dismiss(animated: Bool = true) {
         guard overlay.isVisible else { return }
         overlay.hide(animated: animated)
-        awake.release()
-        photos.stop()
+        syncAwake()
+        if !companion.isVisible { photos.stop() }
         shownMode = nil
         shownWithoutBuiltIn = false
         resetIdle()
@@ -169,6 +186,8 @@ final class StandbyController: ObservableObject {
         let config = store.config
 
         if let until = pausedUntil, until <= now { pausedUntil = nil }
+
+        companionTick(now: now, dt: dt, movement: movement, config: config)
 
         var located = DisplayLocator.current()
         if located == nil, overlay.isVisible, shownWithoutBuiltIn {
@@ -289,7 +308,7 @@ final class StandbyController: ObservableObject {
         pointerTravel = 0
         wakeGraceUntil = Date().addingTimeInterval(manual ? 1.5 : 0.5)
         overlay.show(on: screen, displayID: ctx.displayID, takeFocus: ctx.mode == .solo)
-        if config.keepDisplayAwake { awake.acquire() }
+        syncAwake()
         if ctx.mode == .solo || ctx.bounds.contains(InputActivity.pointer()) {
             NSCursor.setHiddenUntilMouseMoves(true)
         }
@@ -309,6 +328,86 @@ final class StandbyController: ObservableObject {
            Int(now.timeIntervalSince(shownAt) / 60) % max(config.smartRotateMinutes, 1) == 0 {
             nav.rotateStacks()
         }
+        if !force, config.smartRotate, companion.isVisible, minute % max(config.smartRotateMinutes, 1) == 0 {
+            companion.nav.rotateStacks()
+        }
+    }
+
+    // MARK: External displays
+
+    /// External displays get their own screen once nothing at all is being
+    /// used: no input anywhere for `externalIdleDelay`. With the lid closed
+    /// that makes them a screen saver. Any input takes them down again; the
+    /// built-in display keeps its own StandBy until it is used itself.
+    private func companionTick(now: Date, dt: TimeInterval, movement: CGFloat, config: StandbyConfig) {
+        let builtIn = DisplayLocator.current()
+        let externals = DisplayLocator.externalDisplays().filter {
+            CGDisplayIsAsleep($0) == 0 && !(overlay.isVisible && $0 == overlay.displayID)
+        }
+        let locked = InputActivity.isScreenLocked()
+
+        if companion.isVisible {
+            if externals.isEmpty || locked || !config.enabled { return hideCompanion(animated: !locked) }
+            if externals != companion.displayIDs { companion.show(on: externals, config: config) }
+            refreshLiveData(now: now)
+            if config.uses(.macStats), config.externalStyle == .widgets, now.timeIntervalSince(lastLoadSample) >= 2 {
+                lastLoadSample = now
+                power.refreshLoad()
+            }
+            guard now >= companionGraceUntil else { return }
+            companionTravel += movement
+            let types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel]
+            if companionTravel > 30 || types.contains(where: { InputActivity.happened($0, within: dt) }) {
+                hideCompanion()
+            }
+            return
+        }
+
+        guard config.enabled, config.externalEnabled, pausedUntil == nil, !externals.isEmpty, !locked else { return }
+        if builtIn == nil && !config.clamshellEnabled { return }
+        guard InputActivity.secondsSinceAnyInput() >= config.externalIdleDelay else { return }
+        if config.onlyWhenCharging && !PowerSource.read().onAC { return }
+        if config.respectDisplaySleepAssertions && anyDisplayAssertion(now: now) { return }
+        showCompanion(on: externals, config: config)
+    }
+
+    private func showCompanion(on ids: [CGDirectDisplayID], config: StandbyConfig) {
+        let wasVisible = companion.isVisible
+        companion.show(on: ids, config: config)
+        companionGraceUntil = Date().addingTimeInterval(0.6)
+        companionTravel = 0
+        if !wasVisible {
+            refreshLiveData(now: Date(), force: !overlay.isVisible)
+            let wantsPhotos = config.externalStyle == .photos || (config.externalStyle == .widgets && config.uses(.photo))
+            if wantsPhotos && !overlay.isVisible {
+                photos.configure(folder: config.photoFolder, shuffle: config.photoShuffle)
+                photos.start(interval: config.photoInterval)
+            }
+            NSCursor.setHiddenUntilMouseMoves(true)
+        }
+        syncAwake()
+        updateStatus(force: true)
+    }
+
+    private func hideCompanion(animated: Bool = true) {
+        guard companion.isVisible else { return }
+        companion.hide(animated: animated)
+        if !overlay.isVisible { photos.stop() }
+        syncAwake()
+        updateStatus(force: true)
+    }
+
+    private func anyDisplayAssertion(now: Date) -> Bool {
+        if let c = anyAssertionCheck, now.timeIntervalSince(c.date) < 5 { return c.blocked }
+        let blocked = !PowerSource.displaySleepAssertionPIDs().isEmpty
+        anyAssertionCheck = (now, blocked)
+        return blocked
+    }
+
+    /// Holds the keep-awake assertion while anything is showing, if enabled.
+    private func syncAwake() {
+        let showing = overlay.isVisible || companion.isVisible
+        showing && store.config.keepDisplayAwake ? awake.acquire() : awake.release()
     }
 
     // MARK: Events
@@ -341,13 +440,11 @@ final class StandbyController: ObservableObject {
         if old?.photoFolder != config.photoFolder || old?.photoShuffle != config.photoShuffle {
             if old != nil || overlay.isVisible { photos.configure(folder: config.photoFolder, shuffle: config.photoShuffle) }
         }
-        if overlay.isVisible {
+        if overlay.isVisible || companion.isVisible {
             if old?.photoInterval != config.photoInterval { photos.start(interval: config.photoInterval) }
-            if old?.keepDisplayAwake != config.keepDisplayAwake {
-                config.keepDisplayAwake ? awake.acquire() : awake.release()
-            }
         }
-        if !config.enabled { dismiss() }
+        if old?.keepDisplayAwake != config.keepDisplayAwake { syncAwake() }
+        if !config.enabled { dismissAll() }
         updateStatus(force: true)
     }
 
@@ -371,8 +468,12 @@ final class StandbyController: ObservableObject {
         lastStatusUpdate = now
         let config = store.config
         let text: String
-        if overlay.isVisible {
+        if overlay.isVisible && companion.isVisible {
+            text = "Showing on all displays"
+        } else if overlay.isVisible {
             text = shownMode == .dual ? "Showing on the built-in display" : "Showing"
+        } else if companion.isVisible {
+            text = "Showing on the external display"
         } else if !config.enabled {
             text = "Standby is off"
         } else if let until = pausedUntil {

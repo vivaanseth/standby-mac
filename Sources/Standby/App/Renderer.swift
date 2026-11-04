@@ -95,6 +95,32 @@ enum Renderer {
                 .frame(width: shot.size.width, height: shot.size.height)
             write(view, scale: 1, to: dir.appendingPathComponent(shot.name + ".png"))
         }
+        // External display: the Sky through a day, and the other styles.
+        let skyTimes: [(String, Int, Int)] = [("dawn", 6, 50), ("morning", 9, 41), ("dusk", 18, 5), ("blue-hour", 18, 35), ("night", 23, 10)]
+        for (name, hour, minute) in skyTimes {
+            var cal = Calendar.current
+            cal.timeZone = .current
+            let when = cal.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: hour, minute: minute, second: 14))!
+            var config = base
+            config.externalStyle = .sky
+            write(companion(when, config), scale: 1, to: dir.appendingPathComponent("ext-sky-\(name).png"))
+        }
+        for style in [ExternalStyle.clock, .photos, .widgets] {
+            var config = base
+            config.externalStyle = style
+            write(companion(date, config), scale: 1, to: dir.appendingPathComponent("ext-\(style.rawValue).png"))
+        }
+
+        func companion(_ when: Date, _ config: StandbyConfig) -> some View {
+            let nav = StandbyNavigator()
+            nav.prepareForShow(config.companionConfig)
+            return CompanionScene(date: when, config: config, nav: nav)
+                .environmentObject(weather)
+                .environmentObject(calendar)
+                .environmentObject(photos)
+                .environmentObject(power)
+                .frame(width: 1920, height: 1080)
+        }
         print("Rendered \(shots.count) screens to \(dir.path)")
     }
 
@@ -115,6 +141,7 @@ enum Renderer {
             ("clock", AnyView(ClockSettings(store: store))),
             ("photos", AnyView(PhotosSettings(store: store))),
             ("display", AnyView(DisplaySettings(store: store))),
+            ("external", AnyView(ExternalSettings(store: store))),
         ]
         for (name, view) in tabs {
             let root = view

@@ -114,6 +114,30 @@ enum WidgetLayout: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// What appears on external displays once nothing is being used at all.
+enum ExternalStyle: String, Codable, CaseIterable, Identifiable {
+    case sky, clock, photos, widgets, black
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .sky: "Sky"
+        case .clock: "Clock"
+        case .photos: "Photos"
+        case .widgets: "Widgets"
+        case .black: "Black"
+        }
+    }
+    var summary: String {
+        switch self {
+        case .sky: "A window onto the sky where you are: the real sun and moon, colors that follow the time of day, and stars after dark."
+        case .clock: "A full-screen clock face."
+        case .photos: "A slideshow from your photo folder."
+        case .widgets: "Your widget stacks, as on the built-in display."
+        case .black: "Just black, to save energy and rest the screen."
+        }
+    }
+}
+
 struct WidgetSlot: Codable, Equatable, Identifiable {
     var kind: WidgetKind
     var enabled: Bool
@@ -200,6 +224,11 @@ struct StandbyConfig: Codable, Equatable {
     var soloEnabled = true
     var soloIdleDelay: Double = 300
     var wakeOnPointerSolo = true
+    var externalEnabled = true
+    var externalIdleDelay: Double = 300
+    var externalStyle: ExternalStyle = .sky
+    var externalClockStyle: ClockStyle = .world
+    var clamshellEnabled = true
     var onlyWhenCharging = false
     var respectDisplaySleepAssertions = true
     var keepDisplayAwake = false

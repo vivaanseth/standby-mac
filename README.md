@@ -3,6 +3,7 @@
 iPhone-style StandBy for your MacBook. It runs in the menu bar. When the built-in display isn't being used, it turns into a StandBy screen with widgets, photos, or a large clock.
 
 - **With an external display:** Standby covers only the MacBook screen. You keep working on the other display. The built-in display counts as "in use" when you move the pointer on it, click, scroll, or type into a window that sits on it.
+- **When nothing is in use:** once there's no input anywhere, external displays get their own screen too: by default **Sky**, a live view of the sky where you are (the real sun and moon, colors that follow the time of day, stars after dark). Clock, Photos, Widgets, or plain black are also available. Any input brings the external display back, and the built-in display stays in Standby until you use it. With the lid closed, this works as a screen saver on the external display.
 - **With no external display:** it works like a screen saver, after your Mac has been idle for a while.
 
 ## Build and install
@@ -31,6 +32,7 @@ The first time you launch it, Settings opens. After that, use the menu bar icon 
 - **Widgets:** two stacks built from Clock, Calendar, Up Next, Date, Digital Clock, World Clock, Weather, Batteries, and Photos. You can reorder them, Smart Rotate them, choose World Clock cities, and show or hide widget backgrounds.
 - **Clock:** Digital, Analog, World, Solar, and Float faces. Each can be turned on or off, reordered, and recolored.
 - **Photos:** any folder (subfolders included), how often photos change, shuffle, slow zoom, and where the time sits.
+- **External:** what external displays show when nothing is in use, after how long, and whether to act as a screen saver with the lid closed.
 - **Display:** brightness, Night Mode (red, on a schedule or always on), and burn-in protection.
 
 ## Notes
