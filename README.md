@@ -29,7 +29,7 @@ The first time you launch it, Settings opens. After that, use the menu bar icon 
 
 - **General:** idle delays (separate for external-display and screen-saver modes), wake behavior, "only when connected to power", whether to pause for videos and calls, open at login, menu bar icon, keyboard shortcut.
 - **Views:** which views appear and which one opens first, 12/24-hour time, °C/°F, weather city.
-- **Widgets:** two stacks built from Clock, Calendar, Up Next, Date, Digital Clock, World Clock, Weather, Batteries, and Photos. You can reorder them, Smart Rotate them, choose World Clock cities, and show or hide widget backgrounds.
+- **Widgets:** 1–6 Smart Stacks in a Grid, Hero, Spotlight, Strip, or Wave layout. Each stack holds any of 17 widgets: Clock, Calendar, Up Next, Date, Digital Clock, World Clock, Weather, Batteries, Photos, Moon, Sunrise & Sunset, Flip Clock, Word Clock, Time Rings, Countdown, Note, and Mac Activity. You can reorder them, Smart Rotate them, set the Countdown and Note, choose World Clock cities, and show or hide widget backgrounds.
 - **Clock:** Digital, Analog, World, Solar, and Float faces. Each can be turned on or off, reordered, and recolored.
 - **Photos:** any folder (subfolders included), how often photos change, shuffle, slow zoom, and where the time sits.
 - **External:** what external displays show when nothing is in use, after how long, and whether to act as a screen saver with the lid closed.
