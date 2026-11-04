@@ -362,7 +362,7 @@ final class StandbyController: ObservableObject {
             if externals.isEmpty || locked || !config.enabled { return hideCompanion(animated: !locked) }
             if externals != companion.displayIDs { companion.show(on: externals, config: config) }
             refreshLiveData(now: now)
-            if config.uses(.macStats), config.externalStyle == .widgets, now.timeIntervalSince(lastLoadSample) >= 2 {
+            if config.uses(.macStats), config.externalStyle == .standby, now.timeIntervalSince(lastLoadSample) >= 2 {
                 lastLoadSample = now
                 power.refreshLoad()
             }
@@ -373,7 +373,12 @@ final class StandbyController: ObservableObject {
                 return
             }
             companionTravel += movement
-            let types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel]
+            // Scrolling over the external Standby flips through it, like on
+            // the built-in display, instead of waking it.
+            let pointer = InputActivity.pointer()
+            let overCompanion = companion.displayIDs.contains { CGDisplayBounds($0).contains(pointer) }
+            var types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+            if !overCompanion || config.externalStyle != .standby { types.append(.scrollWheel) }
             if companionTravel > companionWakeTravel || types.contains(where: { InputActivity.happened($0, within: dt) }) {
                 hideCompanion()
             }
@@ -401,8 +406,7 @@ final class StandbyController: ObservableObject {
         }
         if !wasVisible {
             refreshLiveData(now: Date(), force: !overlay.isVisible)
-            let wantsPhotos = config.externalStyle == .photos || (config.externalStyle == .widgets && config.uses(.photo))
-            if wantsPhotos && !overlay.isVisible {
+            if config.companionWantsPhotos && !overlay.isVisible {
                 photos.configure(folder: config.photoFolder, shuffle: config.photoShuffle)
                 photos.start(interval: config.photoInterval)
             }
@@ -453,6 +457,7 @@ final class StandbyController: ObservableObject {
     private func configChanged(_ config: StandbyConfig) {
         defer { lastConfig = config }
         nav.apply(config)
+        companion.nav.apply(config)
         let old = lastConfig
         if old?.weatherPlace != config.weatherPlace || old?.temperatureUnit != config.temperatureUnit {
             weather.refresh(config: config, force: true)

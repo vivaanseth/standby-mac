@@ -116,10 +116,16 @@ enum WidgetLayout: String, Codable, CaseIterable, Identifiable {
 
 /// What appears on external displays once nothing is being used at all.
 enum ExternalStyle: String, Codable, CaseIterable, Identifiable {
-    case sky, clock, photos, widgets, black
+    case standby, sky, black
+    /// Earlier single-view styles, now Standby opening on that view; kept so
+    /// saved settings still decode.
+    case clock, photos, widgets
     var id: String { rawValue }
+    /// The styles offered in Settings.
+    static let choices: [ExternalStyle] = [.standby, .sky, .black]
     var title: String {
         switch self {
+        case .standby: "Standby"
         case .sky: "Sky"
         case .clock: "Clock"
         case .photos: "Photos"
@@ -129,6 +135,7 @@ enum ExternalStyle: String, Codable, CaseIterable, Identifiable {
     }
     var summary: String {
         switch self {
+        case .standby: "The same Standby as your MacBook (widgets, photos, and clocks) with its own swiping. Swipe with two fingers while the pointer is over this display."
         case .sky: "A window onto the sky where you are: the real sun and moon, colors that follow the time of day, and stars after dark."
         case .clock: "A full-screen clock face."
         case .photos: "A slideshow from your photo folder."
@@ -226,8 +233,12 @@ struct StandbyConfig: Codable, Equatable {
     var wakeOnPointerSolo = true
     var externalEnabled = true
     var externalIdleDelay: Double = 300
-    var externalStyle: ExternalStyle = .sky
+    var externalStyle: ExternalStyle = .standby
+    /// The view and clock face the external display opens to: by default the
+    /// clock, to complement the widgets on the built-in display.
+    var externalStartPage: PageKind = .clock
     var externalClockStyle: ClockStyle = .world
+    var externalStyleMigrated = false
     var clamshellEnabled = true
     var onlyWhenCharging = false
     var respectDisplaySleepAssertions = true
@@ -356,6 +367,17 @@ struct StandbyConfig: Codable, Equatable {
 
     /// Adds anything introduced after the settings were first saved.
     mutating func normalize() {
+        switch externalStyle {
+        case .clock: externalStyle = .standby; externalStartPage = .clock
+        case .photos: externalStyle = .standby; externalStartPage = .photos
+        case .widgets: externalStyle = .standby; externalStartPage = .widgets
+        default: break
+        }
+        // Sky was the first default; Standby replaced it as the default.
+        if !externalStyleMigrated {
+            if externalStyle == .sky { externalStyle = .standby }
+            externalStyleMigrated = true
+        }
         while stacks.count < Self.maxStacks { stacks.append(Self.defaultStacks[stacks.count]) }
         stacks = Array(stacks.prefix(Self.maxStacks))
         for i in stacks.indices {

@@ -136,12 +136,15 @@ struct ExternalSettings: View {
             Section {
                 ExternalPreviewCard(store: store)
                 Picker("Show", selection: $store.config.externalStyle) {
-                    ForEach(ExternalStyle.allCases) { Text($0.title).tag($0) }
+                    ForEach(ExternalStyle.choices) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 Text(store.config.externalStyle.summary).settingsFootnote()
-                if store.config.externalStyle == .clock {
+                if store.config.externalStyle == .standby {
+                    Picker("Open to", selection: $store.config.externalStartPage) {
+                        ForEach(PageKind.allCases) { Text($0.title).tag($0) }
+                    }
                     Picker("Clock face", selection: $store.config.externalClockStyle) {
                         ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
                     }

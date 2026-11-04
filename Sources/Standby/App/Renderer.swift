@@ -105,10 +105,12 @@ enum Renderer {
             config.externalStyle = .sky
             write(companion(when, config), scale: 1, to: dir.appendingPathComponent("ext-sky-\(name).png"))
         }
-        for style in [ExternalStyle.clock, .photos, .widgets] {
+        for (page, face) in [(PageKind.clock, ClockStyle.world), (.clock, .digital), (.widgets, .world), (.photos, .world)] {
             var config = base
-            config.externalStyle = style
-            write(companion(date, config), scale: 1, to: dir.appendingPathComponent("ext-\(style.rawValue).png"))
+            config.externalStyle = .standby
+            config.externalStartPage = page
+            config.externalClockStyle = face
+            write(companion(date, config), scale: 1, to: dir.appendingPathComponent("ext-standby-\(page.rawValue)-\(face.rawValue).png"))
         }
 
         func companion(_ when: Date, _ config: StandbyConfig) -> some View {

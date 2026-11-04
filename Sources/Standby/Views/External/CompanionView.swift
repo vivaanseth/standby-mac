@@ -7,19 +7,25 @@ final class CompanionState: ObservableObject {
 }
 
 extension StandbyConfig {
-    /// The settings the external display draws with: one page, and for Clock
-    /// the chosen face.
+    /// The settings the external display starts from: the same Standby, but
+    /// opening on its own view and clock face.
     var companionConfig: StandbyConfig {
         var c = self
-        c.showWidgets = externalStyle == .widgets
-        c.showPhotos = externalStyle == .photos
-        c.showClock = externalStyle == .clock
-        c.clockStyles = [ClockSlot(style: externalClockStyle, enabled: true)]
+        switch externalStartPage {
+        case .widgets: c.startPage = .widgets
+        case .photos: c.startPage = .photos
+        case .clock: c.startPage = .clock
+        }
+        c.lastClockStyle = externalClockStyle
         return c
+    }
+
+    var companionWantsPhotos: Bool {
+        externalStyle == .standby && (showPhotos || uses(.photo))
     }
 }
 
-/// What an external display shows: the Sky, or one StandBy page.
+/// What an external display shows: Standby itself, the Sky, or black.
 struct CompanionScene: View {
     var date: Date
     var config: StandbyConfig
@@ -39,8 +45,8 @@ struct CompanionScene: View {
                     .overlay(Color.black.opacity(1 - min(max(config.brightness, 0.1), 1)))
             case .black:
                 Color.black
-            case .clock, .photos, .widgets:
-                StandbyScene(date: date, config: config.companionConfig, nav: nav)
+            case .standby, .clock, .photos, .widgets:
+                StandbyScene(date: date, config: config, nav: nav)
             }
         }
         .background(Color.black)

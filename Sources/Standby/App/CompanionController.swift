@@ -13,10 +13,23 @@ final class CompanionController {
 
     private var windows: [CGDirectDisplayID: TransitionWindow] = [:]
     private let makeContent: () -> AnyView
+    private var monitor: Any?
 
     init(store: ConfigStore, environment: @escaping (CompanionRootView) -> AnyView) {
         let state = state, nav = nav
         makeContent = { environment(CompanionRootView(store: store, state: state, nav: nav)) }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            let consumed = MainActor.assumeIsolated { self?.handleScroll(event) ?? false }
+            return consumed ? nil : event
+        }
+    }
+
+    /// Two-finger swipes and the mouse wheel flip through the external
+    /// Standby the same way they do on the built-in display.
+    private func handleScroll(_ event: NSEvent) -> Bool {
+        guard isVisible, let window = event.window, windows.values.contains(where: { $0.panel === window }) else { return false }
+        nav.handleScroll(event, size: window.frame.size)
+        return true
     }
 
     /// Shows on exactly these displays, adding and removing windows as needed.

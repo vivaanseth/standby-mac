@@ -107,8 +107,12 @@ struct WorldFace: View {
 
     var body: some View {
         let s = unit(size)
-        let mapWidth = size.width * 0.94
-        let mapHeight = mapWidth / CGFloat(WorldMapData.columns) * CGFloat(WorldMapData.rows)
+        // As wide as the screen allows, but never up into the time and date
+        // (which matters on screens wider than 16:10).
+        let roomBelowText = size.height - s * 0.4
+        let aspect = CGFloat(WorldMapData.columns) / CGFloat(WorldMapData.rows)
+        let mapWidth = min(size.width * 0.94, roomBelowText * aspect)
+        let mapHeight = mapWidth / aspect
         ZStack(alignment: .topLeading) {
             WorldMapView(minuteStamp: Int(date.timeIntervalSince1970 / 60),
                          latitude: location.latitude,
