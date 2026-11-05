@@ -70,8 +70,8 @@ When nothing is in use, your external display shows its own Standby: by default 
 
 ## Install
 
-1. Download **Standby.zip** from the [latest release](https://github.com/vivaanseth/standby-mac/releases/latest).
-2. Unzip it and drag **Standby** into your **Applications** folder.
+1. Download the **.dmg** from the [latest release](https://github.com/vivaanseth/standby-mac/releases/latest).
+2. Open it and drag **Standby** onto the **Applications** folder.
 3. The first time, **right-click Standby → Open**, then click **Open**. (Standby isn't notarized by Apple, so macOS asks once.)
 4. Settings opens automatically. Look for the clock icon in your menu bar.
 
