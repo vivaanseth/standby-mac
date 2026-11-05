@@ -12,7 +12,7 @@ When you're not using your MacBook's screen, Standby turns it into a beautiful b
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
 ![Swift](https://img.shields.io/badge/Swift-SwiftUI-orange?logo=swift)
-![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)
 
 </div>
 
@@ -165,4 +165,11 @@ Standby is an independent project inspired by StandBy on iPhone. It isn't affili
 
 ## License
 
-[MIT](LICENSE) © 2026 Vivaan Seth
+© 2026 Vivaan Seth. Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+- ✅ Download and use Standby for yourself
+- ✅ Study the code, change it, and build on it
+- ✅ Share it and your changes, for free, with this license included
+- ❌ Sell it, or use it for any commercial purpose
+
+Want to use it commercially? Open an issue to ask.
