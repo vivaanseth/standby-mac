@@ -2,6 +2,8 @@
 
 iPhone-style StandBy for your MacBook. It runs in the menu bar. When the built-in display isn't being used, it turns into a StandBy screen with widgets, photos, or a large clock.
 
+![Widgets](screenshots/01-widgets.png)
+
 - **With an external display:** Standby covers only the MacBook screen. You keep working on the other display. The built-in display counts as "in use" when you move the pointer on it, click, scroll, or type into a window that sits on it.
 - **When nothing is in use:** once there's no input anywhere, external displays get their own Standby too: the same widgets, photos and clocks, swipeable with two fingers, opening on the Clock by default so the two screens complement each other. **Sky** (a live view of the sky where you are) and plain black are alternatives. Any input brings the external display back, and the built-in display stays in Standby until you use it. With the lid closed, this works as a screen saver on the external display.
 - **With no external display:** it works like a screen saver, after your Mac has been idle for a while.
@@ -42,3 +44,17 @@ The first time you launch it, Settings opens. After that, use the menu bar icon 
 - If macOS turns off the display or starts its own screen saver before Standby kicks in, adjust **System Settings → Lock Screen** to allow more time, or enable "Keep the display awake while Standby is showing".
 - Scriptable (e.g. from Shortcuts): `Standby.app/Contents/MacOS/Standby --show | --hide | --toggle`.
 - `Standby --render <dir>` writes PNGs of every screen without opening any windows.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Digital clock](screenshots/07-clock-digital.png) | ![Float clock](screenshots/11-clock-float.png) |
+| ![World clock](screenshots/09-clock-world.png) | ![Night mode](screenshots/12-night.png) |
+| ![Creative widgets](screenshots/26-new-a.png) | ![External display](screenshots/ext-standby-clock-digital.png) |
+
+## Credits
+
+World map from [Natural Earth](https://www.naturalearthdata.com) (public domain). Weather by [Open-Meteo](https://open-meteo.com).
+
+Standby is an independent project inspired by StandBy on iPhone. It isn't affiliated with or endorsed by Apple.
