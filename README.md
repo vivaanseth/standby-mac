@@ -75,7 +75,7 @@ When nothing is in use, your external display shows its own Standby: by default 
 3. The first time, **right-click Standby → Open**, then click **Open**. (Standby isn't notarized by Apple, so macOS asks once.)
 4. Settings opens automatically. Look for the clock icon in your menu bar.
 
-> **Requirements:** macOS 14 Sonoma or later. Release builds are for Intel Macs; on Apple silicon, [build it yourself](#build-from-source) in one command.
+> **Requirements:** macOS 14 Sonoma or later, on any Apple silicon or Intel Mac.
 
 ---
 

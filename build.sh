@@ -5,8 +5,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-swift build -c release
-BIN="$(swift build -c release --show-bin-path)/Standby"
+# Universal binary: runs natively on Intel and Apple silicon.
+swift build -c release --arch arm64 --arch x86_64
+BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/Standby"
 
 APP="build/Standby.app"
 rm -rf "$APP" build/AppIcon.iconset
