@@ -58,3 +58,7 @@ The first time you launch it, Settings opens. After that, use the menu bar icon 
 World map from [Natural Earth](https://www.naturalearthdata.com) (public domain). Weather by [Open-Meteo](https://open-meteo.com).
 
 Standby is an independent project inspired by StandBy on iPhone. It isn't affiliated with or endorsed by Apple.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
