@@ -1,64 +1,168 @@
+<div align="center">
+
+<img src="screenshots/01-widgets.png" alt="Standby showing a clock and calendar" width="720">
+
 # Standby
 
-iPhone-style StandBy for your MacBook. It runs in the menu bar. When the built-in display isn't being used, it turns into a StandBy screen with widgets, photos, or a large clock.
+**iPhone-style StandBy for your Mac.**
 
-![Widgets](screenshots/01-widgets.png)
+When you're not using your MacBook's screen, Standby turns it into a beautiful bedside-style display:<br>widgets, a big clock, or your photos, while you keep working on your other monitor.
 
-- **With an external display:** Standby covers only the MacBook screen. You keep working on the other display. The built-in display counts as "in use" when you move the pointer on it, click, scroll, or type into a window that sits on it.
-- **When nothing is in use:** once there's no input anywhere, external displays get their own Standby too: the same widgets, photos and clocks, swipeable with two fingers, opening on the Clock by default so the two screens complement each other. **Sky** (a live view of the sky where you are) and plain black are alternatives. Any input brings the external display back, and the built-in display stays in Standby until you use it. With the lid closed, this works as a screen saver on the external display.
-- **With no external display:** it works like a screen saver, after your Mac has been idle for a while.
+[**Download**](https://github.com/vivaanseth/standby-mac/releases/latest) · [Features](#features) · [Install](#install) · [How to use it](#how-to-use-it) · [Settings](#settings) · [FAQ](#faq)
 
-## Build and install
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
+![Swift](https://img.shields.io/badge/Swift-SwiftUI-orange?logo=swift)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-Requires macOS 14+ and Xcode (or the Command Line Tools).
+</div>
 
-```bash
-./build.sh            # builds build/Standby.app
-./build.sh install    # also copies it to /Applications and launches it
-```
+---
 
-The first time you launch it, Settings opens. After that, use the menu bar icon (a clock) or press **⌃⌥⌘S** to show or hide Standby at any time.
+## Features
 
-## Using it
+### 🖥️ It knows which screen you're using
+- **Working on an external monitor?** Only your MacBook's screen goes into Standby. You keep working, uninterrupted.
+- **Stepped away from everything?** Your external monitor gets its own Standby too.
+- **Just a MacBook?** It works like a screen saver.
 
-| | |
+No special permissions needed. It watches where your pointer and typing are, not what you're doing.
+
+### 🧩 17 widgets, stacked like on iPhone
+
+Swipe up and down through Smart Stacks, and arrange up to six of them in five layouts.
+
+<p align="center">
+  <img src="screenshots/26-new-a.png" width="49%" alt="Moon, sunrise, flip clock, word clock, time rings and countdown widgets">
+  <img src="screenshots/23-spotlight-5.png" width="49%" alt="Spotlight layout with five stacks">
+</p>
+
+Clock · Calendar · Up Next · Date · Digital Clock · World Clock · Weather · Batteries · Photos · Moon · Sunrise & Sunset · Flip Clock · Word Clock · Time Rings · Countdown · Note · Mac Activity
+
+### ⏰ Five clock faces
+
+<p align="center">
+  <img src="screenshots/07-clock-digital.png" width="32%" alt="Digital clock">
+  <img src="screenshots/11-clock-float.png" width="32%" alt="Float clock">
+  <img src="screenshots/09-clock-world.png" width="32%" alt="World clock">
+</p>
+<p align="center">
+  <img src="screenshots/08-clock-analog.png" width="32%" alt="Analog clock">
+  <img src="screenshots/10-clock-solar.png" width="32%" alt="Solar clock">
+  <img src="screenshots/12-night.png" width="32%" alt="Night mode">
+</p>
+
+**Digital**, **Analog**, **World**, **Solar** and **Float**, each in your choice of color. The World and Solar faces follow the real sun. **Night Mode** turns everything a dim red for dark rooms.
+
+### 🖼️ Photos
+A slideshow from any folder, with a gentle zoom and the time in the corner.
+
+<p align="center"><img src="screenshots/06-photos.png" width="60%" alt="Photos view"></p>
+
+### 🌄 Your external monitor, too
+When nothing is in use, your external display shows its own Standby: by default the clock, to complement the widgets on your MacBook. Or choose **Sky**, a live window onto the sky where you are.
+
+<p align="center">
+  <img src="screenshots/ext-standby-clock-digital.png" width="49%" alt="Standby on an external display">
+  <img src="screenshots/ext-sky-dusk.png" width="49%" alt="Sky scene at dusk">
+</p>
+
+---
+
+## Install
+
+1. Download **Standby.zip** from the [latest release](https://github.com/vivaanseth/standby-mac/releases/latest).
+2. Unzip it and drag **Standby** into your **Applications** folder.
+3. The first time, **right-click Standby → Open**, then click **Open**. (Standby isn't notarized by Apple, so macOS asks once.)
+4. Settings opens automatically. Look for the clock icon in your menu bar.
+
+> **Requirements:** macOS 14 Sonoma or later. Release builds are for Intel Macs; on Apple silicon, [build it yourself](#build-from-source) in one command.
+
+---
+
+## How to use it
+
+Just leave it running. Standby starts on its own after your screen has been unused for a couple of minutes.
+
+| To… | Do this |
 |---|---|
-| Change view (Widgets / Photos / Clock) | two-finger swipe left/right, click-drag, or ← → |
-| Flip a widget stack or clock style | two-finger swipe up/down on it, or ↑ ↓ (⇧↑↓ for the right stack) |
-| Wake | click, or any other key; pointer movement too if enabled |
+| Show or hide Standby now | Press **⌃⌥⌘S**, or use the menu bar icon |
+| Switch between Widgets, Photos and Clock | Swipe left or right with two fingers, or press **← →** |
+| Flip through a widget stack or clock faces | Swipe up or down on it, or press **↑ ↓** |
+| Wake up | Click, press any key, or move the pointer |
+| Pause for a while | Menu bar icon → **Pause** |
+
+---
 
 ## Settings
 
-- **General:** idle delays (separate for external-display and screen-saver modes), wake behavior, "only when connected to power", whether to pause for videos and calls, open at login, menu bar icon, keyboard shortcut.
-- **Views:** which views appear and which one opens first, 12/24-hour time, °C/°F, weather city.
-- **Widgets:** 1–6 Smart Stacks in a Grid, Hero, Spotlight, Strip, or Wave layout. Each stack holds any of 17 widgets: Clock, Calendar, Up Next, Date, Digital Clock, World Clock, Weather, Batteries, Photos, Moon, Sunrise & Sunset, Flip Clock, Word Clock, Time Rings, Countdown, Note, and Mac Activity. You can reorder them, Smart Rotate them, set the Countdown and Note, choose World Clock cities, and show or hide widget backgrounds.
-- **Clock:** Digital, Analog, World, Solar, and Float faces. Each can be turned on or off, reordered, and recolored.
-- **Photos:** any folder (subfolders included), how often photos change, shuffle, slow zoom, and where the time sits.
-- **External:** what external displays show when nothing is in use, after how long, and whether to act as a screen saver with the lid closed.
-- **Display:** brightness, Night Mode (red, on a schedule or always on), and burn-in protection.
+Open **Settings** from the menu bar icon (or press **⌘,**). Every change shows up in a live preview.
 
-## Notes
-
-- No special permissions are needed. Calendar access is requested only if you turn on the Up Next widget.
-- Weather comes from [Open-Meteo](https://open-meteo.com). Nothing is sent until you choose a city, and then only that city's coordinates are sent.
-- If macOS turns off the display or starts its own screen saver before Standby kicks in, adjust **System Settings → Lock Screen** to allow more time, or enable "Keep the display awake while Standby is showing".
-- Scriptable (e.g. from Shortcuts): `Standby.app/Contents/MacOS/Standby --show | --hide | --toggle`.
-- `Standby --render <dir>` writes PNGs of every screen without opening any windows.
-
-## Screenshots
-
-| | |
+| Tab | What you can change |
 |---|---|
-| ![Digital clock](screenshots/07-clock-digital.png) | ![Float clock](screenshots/11-clock-float.png) |
-| ![World clock](screenshots/09-clock-world.png) | ![Night mode](screenshots/12-night.png) |
-| ![Creative widgets](screenshots/26-new-a.png) | ![External display](screenshots/ext-standby-clock-digital.png) |
+| **General** | When Standby starts, what wakes it, open at login, keyboard shortcut |
+| **Views** | Which views appear, 12/24-hour time, °C/°F, weather city |
+| **External** | What your external display shows, and when |
+| **Widgets** | Number of stacks, layout, which widgets, Smart Rotate, countdown, note |
+| **Clock** | Which faces, their order, and their colors |
+| **Photos** | Photo folder, how often photos change, where the time sits |
+| **Display** | Brightness, Night Mode schedule, burn-in protection |
+
+---
+
+## FAQ
+
+<details>
+<summary><b>Does Standby need any permissions?</b></summary>
+
+No. Calendar access is requested only if you add the Up Next widget.
+</details>
+
+<details>
+<summary><b>Does it send any of my data anywhere?</b></summary>
+
+No. The only network request is for weather, from <a href="https://open-meteo.com">Open-Meteo</a>, and only after you pick a city. Just that city's coordinates are sent.
+</details>
+
+<details>
+<summary><b>Standby doesn't appear, or the screen turns off first.</b></summary>
+
+macOS may be turning off the display or starting its own screen saver first. Give it more time in <b>System Settings → Lock Screen</b>, or turn on <b>Keep the display awake while Standby is showing</b> in Standby's settings. Standby also waits while a video or call is keeping the screen on.
+</details>
+
+<details>
+<summary><b>I hid the menu bar icon. How do I get back to Settings?</b></summary>
+
+Open Standby again from Applications or Spotlight.
+</details>
+
+<details>
+<summary><b>Can I control it from Shortcuts or the Terminal?</b></summary>
+
+Yes: <code>/Applications/Standby.app/Contents/MacOS/Standby --show</code> (or <code>--hide</code>, <code>--toggle</code>).
+</details>
+
+---
+
+## Build from source
+
+Requires macOS 14+ and Xcode or the Command Line Tools.
+
+```bash
+git clone https://github.com/vivaanseth/standby-mac.git
+cd standby-mac
+./build.sh install
+```
+
+`./build.sh` alone builds `build/Standby.app` without installing it. `Standby --render <folder>` saves a picture of every screen.
+
+---
 
 ## Credits
 
-World map from [Natural Earth](https://www.naturalearthdata.com) (public domain). Weather by [Open-Meteo](https://open-meteo.com).
+World map from [Natural Earth](https://www.naturalearthdata.com) (public domain) · Weather by [Open-Meteo](https://open-meteo.com)
 
 Standby is an independent project inspired by StandBy on iPhone. It isn't affiliated with or endorsed by Apple.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE) © 2026 Vivaan Seth
