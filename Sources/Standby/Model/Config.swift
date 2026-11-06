@@ -242,6 +242,7 @@ struct StandbyConfig: Codable, Equatable {
     var clamshellEnabled = true
     var onlyWhenCharging = false
     var respectDisplaySleepAssertions = true
+    var yieldToAgents = true
     var keepDisplayAwake = false
     var hotKeyEnabled = true
     var showMenuBarIcon = true

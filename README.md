@@ -130,6 +130,18 @@ macOS may be turning off the display or starting its own screen saver first. Giv
 </details>
 
 <details>
+<summary><b>Why didn't Standby start?</b></summary>
+
+An app may be keeping your Mac awake, such as Caffeinate, Amphetamine, an AI agent at work, or a video or call. Playing music doesn't count. The menu bar icon shows the app's name, and you can turn this off in <b>Settings → General</b>.
+</details>
+
+<details>
+<summary><b>Does Standby get in the way of AI agents that use the screen?</b></summary>
+
+No. Standby is left out of screenshots, so an agent sees what's really on the screen. When something captures the screen or sends automated mouse input, Standby leaves every display and stays away for 2 minutes after the last activity. Your own screenshots and screen sharing count too. You can turn this off in <b>Settings → General</b>. Scripts can ask for the same thing with <code>--yield</code>.
+</details>
+
+<details>
 <summary><b>I hid the menu bar icon. How do I get back to Settings?</b></summary>
 
 Open Standby again from Applications or Spotlight.
@@ -138,7 +150,7 @@ Open Standby again from Applications or Spotlight.
 <details>
 <summary><b>Can I control it from Shortcuts or the Terminal?</b></summary>
 
-Yes: <code>/Applications/Standby.app/Contents/MacOS/Standby --show</code> (or <code>--hide</code>, <code>--toggle</code>).
+Yes: <code>/Applications/Standby.app/Contents/MacOS/Standby --show</code> (or <code>--hide</code>, <code>--toggle</code>, <code>--yield</code>).
 </details>
 
 ---

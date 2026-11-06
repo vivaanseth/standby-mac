@@ -21,6 +21,10 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
 /// SwiftUI builds the first frame.
 @MainActor
 final class TransitionWindow {
+    /// Leaves these windows out of screenshots and screen recordings, so a
+    /// capture shows what's really on the screen underneath.
+    static var hiddenFromCapture = true
+
     let panel: OverlayPanel
     private(set) var isVisible = false
     /// Called once the exit animation has finished and the window is gone.
@@ -61,6 +65,8 @@ final class TransitionWindow {
 
     func present(on frame: NSRect) {
         fadeToken += 1
+        panel.sharingType = Self.hiddenFromCapture ? .none : .readOnly
+        panel.ignoresMouseEvents = false
         panel.setFrame(frame, display: true)
         let entering = !isVisible
         isVisible = true
@@ -102,6 +108,8 @@ final class TransitionWindow {
             self.onHidden?()
         }
         guard animated else { return finish() }
+        // Clicks go straight through to whatever is underneath while it fades.
+        panel.ignoresMouseEvents = true
         animateContent(visible: false, delay: 0)
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.65

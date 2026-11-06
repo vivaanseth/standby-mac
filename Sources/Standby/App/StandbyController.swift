@@ -5,6 +5,8 @@ import SwiftUI
 /// Commands another process can send to the running app.
 enum StandbyCommand: String, CaseIterable {
     case show, hide, toggle
+    /// For scripts and agents: take Standby down and hold it off for a while.
+    case yield
 
     static let notification = Notification.Name("local.standby.mac.command")
 
@@ -42,7 +44,13 @@ final class StandbyController: ObservableObject {
     private var lastBuiltInActivity = Date()
     private var wakeGraceUntil = Date.distantPast
     private var pointerTravel: CGFloat = 0
-    private var assertionCheck: (date: Date, blocked: Bool)?
+    private var keepAwakeSample: (date: Date, holders: [PowerSource.KeepAwakeHolder])?
+    private var waitingOnApp: String?
+    private let agentActivity = AgentActivity()
+    private var agentHoldUntil = Date.distantPast
+    /// How long Standby stays away after an AI or automation last used the
+    /// screen, to cover the pauses while it thinks between steps.
+    private let agentHold: TimeInterval = 120
     private var shownMode: StandbyMode?
     private var shownWithoutBuiltIn = false
     private var shownAt = Date()
@@ -54,7 +62,6 @@ final class StandbyController: ObservableObject {
     /// let go of the mouse and keyboard for a moment since it appeared.
     private var companionArmed = false
     private var companionWakeTravel: CGFloat = 30
-    private var anyAssertionCheck: (date: Date, blocked: Bool)?
     private var lastStatusUpdate = Date.distantPast
     private let awake = DisplayAwakeAssertion()
     private var observers: [NSObjectProtocol] = []
@@ -117,6 +124,7 @@ final class StandbyController: ObservableObject {
                 case .show: if self?.isShowing == false { self?.startNow() }
                 case .hide: self?.dismissAll()
                 case .toggle: self?.toggle()
+                case .yield: self?.yieldToAgent()
                 case nil: break
                 }
             }
@@ -132,6 +140,7 @@ final class StandbyController: ObservableObject {
     /// Starts StandBy everywhere at once: the built-in display (or the main
     /// display with the lid closed) and, if enabled, the external displays.
     func startNow() {
+        agentHoldUntil = .distantPast
         if let ctx = DisplayLocator.current() {
             shownWithoutBuiltIn = false
             show(ctx, manual: true)
@@ -161,6 +170,11 @@ final class StandbyController: ObservableObject {
         pausedUntil = nil
         resetIdle()
         updateStatus(force: true)
+    }
+
+    private func yieldToAgent() {
+        agentHoldUntil = Date().addingTimeInterval(agentHold)
+        dismissAll()
     }
 
     /// Takes StandBy down everywhere: built-in and external displays.
@@ -199,6 +213,11 @@ final class StandbyController: ObservableObject {
 
         if let until = pausedUntil, until <= now { pausedUntil = nil }
 
+        // Sampled every tick, even when off, to keep its baseline current.
+        if agentActivity.detected(), config.yieldToAgents, config.enabled {
+            yieldToAgent()
+        }
+
         companionTick(now: now, dt: dt, movement: movement, config: config)
 
         var located = DisplayLocator.current()
@@ -233,12 +252,17 @@ final class StandbyController: ObservableObject {
         }
         updateStatus(ctx: ctx, idle: idle)
 
-        guard config.enabled, pausedUntil == nil else { return }
+        guard config.enabled, pausedUntil == nil, now >= agentHoldUntil else { return }
         let modeEnabled = ctx.mode == .solo ? config.soloEnabled : config.dualEnabled
         let delay = ctx.mode == .solo ? config.soloIdleDelay : config.dualIdleDelay
+        waitingOnApp = nil
         guard modeEnabled, idle >= delay else { return }
         if config.onlyWhenCharging && !PowerSource.read().onAC { return }
-        if config.respectDisplaySleepAssertions && blockedByAssertions(ctx, now: now) { return }
+        if config.respectDisplaySleepAssertions,
+           let app = keepAwakeBlocker(target: ctx.mode == .dual ? ctx.bounds : nil, now: now) {
+            waitingOnApp = app
+            return
+        }
         show(ctx, manual: false)
     }
 
@@ -385,11 +409,11 @@ final class StandbyController: ObservableObject {
             return
         }
 
-        guard config.enabled, config.externalEnabled, pausedUntil == nil, !externals.isEmpty, !locked else { return }
+        guard config.enabled, config.externalEnabled, pausedUntil == nil, now >= agentHoldUntil, !externals.isEmpty, !locked else { return }
         if builtIn == nil && !config.clamshellEnabled { return }
         guard InputActivity.secondsSinceAnyInput() >= config.externalIdleDelay else { return }
         if config.onlyWhenCharging && !PowerSource.read().onAC { return }
-        if config.respectDisplaySleepAssertions && anyDisplayAssertion(now: now) { return }
+        if config.respectDisplaySleepAssertions && keepAwakeBlocker(target: nil, now: now) != nil { return }
         showCompanion(on: externals, config: config)
     }
 
@@ -424,13 +448,6 @@ final class StandbyController: ObservableObject {
         updateStatus(force: true)
     }
 
-    private func anyDisplayAssertion(now: Date) -> Bool {
-        if let c = anyAssertionCheck, now.timeIntervalSince(c.date) < 5 { return c.blocked }
-        let blocked = !PowerSource.displaySleepAssertionPIDs().isEmpty
-        anyAssertionCheck = (now, blocked)
-        return blocked
-    }
-
     /// Holds the keep-awake assertion while anything is showing, if enabled.
     private func syncAwake() {
         let showing = overlay.isVisible || companion.isVisible
@@ -456,6 +473,7 @@ final class StandbyController: ObservableObject {
 
     private func configChanged(_ config: StandbyConfig) {
         defer { lastConfig = config }
+        TransitionWindow.hiddenFromCapture = config.yieldToAgents
         nav.apply(config)
         companion.nav.apply(config)
         let old = lastConfig
@@ -476,16 +494,17 @@ final class StandbyController: ObservableObject {
         updateStatus(force: true)
     }
 
-    private func blockedByAssertions(_ ctx: DisplayContext, now: Date) -> Bool {
-        if let c = assertionCheck, now.timeIntervalSince(c.date) < 5 { return c.blocked }
-        let pids = PowerSource.displaySleepAssertionPIDs()
-        let blocked: Bool
-        switch ctx.mode {
-        case .solo: blocked = !pids.isEmpty
-        case .dual: blocked = pids.contains { WindowInspector.hasWindow(pid: $0, mostlyOn: ctx.bounds) }
+    /// The app keeping the Mac awake that should stop StandBy, if any. A
+    /// video only counts on the display it's playing on; `target` nil means
+    /// any display counts.
+    private func keepAwakeBlocker(target: CGRect?, now: Date) -> String? {
+        if keepAwakeSample == nil || now.timeIntervalSince(keepAwakeSample!.date) >= 5 {
+            keepAwakeSample = (now, PowerSource.keepAwakeHolders())
         }
-        assertionCheck = (now, blocked)
-        return blocked
+        return keepAwakeSample?.holders.first { holder in
+            guard let target, holder.keepsDisplayOn else { return true }
+            return WindowInspector.hasWindow(pid: holder.pid, mostlyOn: target) || !WindowInspector.hasAnyWindow(pid: holder.pid)
+        }?.name
     }
 
     // MARK: Status
@@ -506,6 +525,10 @@ final class StandbyController: ObservableObject {
             text = "Standby is off"
         } else if let until = pausedUntil {
             text = until == .distantFuture ? "Paused" : "Paused until \(TimeText.format(until, "jmm"))"
+        } else if now < agentHoldUntil {
+            text = "Waiting: an AI or app is using the screen"
+        } else if let waitingOnApp {
+            text = "Waiting: \(waitingOnApp) is keeping your Mac awake"
         } else if let ctx = ctx ?? DisplayLocator.current() {
             let idle = idle ?? 0
             switch ctx.mode {

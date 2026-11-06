@@ -94,7 +94,8 @@ struct GeneralSettings: View {
 
             Section("Conditions") {
                 Toggle("Only start when connected to power", isOn: $store.config.onlyWhenCharging)
-                Toggle("Don't start while an app keeps the display awake (videos, calls, presentations)", isOn: $store.config.respectDisplaySleepAssertions)
+                Toggle("Don't start while an app keeps your Mac awake (Caffeinate, Amphetamine, videos, calls)", isOn: $store.config.respectDisplaySleepAssertions)
+                Toggle("Get out of the way when an AI or app captures or controls the screen", isOn: $store.config.yieldToAgents)
                 Toggle("Keep the display awake while Standby is showing", isOn: $store.config.keepDisplayAwake)
             }
 

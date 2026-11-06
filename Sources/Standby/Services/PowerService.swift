@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import IOKit.ps
 import IOKit.pwr_mgt
 
@@ -29,19 +29,55 @@ enum PowerSource {
         return result
     }
 
-    /// Processes currently asking the system to keep the display on — video
-    /// players, video calls, presentations.
-    static func displaySleepAssertionPIDs() -> Set<pid_t> {
+    struct KeepAwakeHolder {
+        var pid: pid_t
+        var name: String
+        /// Keeping the display on (a video, a call, a presentation), rather
+        /// than only the Mac.
+        var keepsDisplayOn: Bool
+    }
+
+    /// Apps deliberately keeping the Mac or its display awake: caffeinate,
+    /// Amphetamine, an app doing long-running work, a video. Playing audio
+    /// doesn't count, nor do the system's own background services.
+    static func keepAwakeHolders() -> [KeepAwakeHolder] {
         var raw: Unmanaged<CFDictionary>?
         guard IOPMCopyAssertionsByProcess(&raw) == kIOReturnSuccess,
               let dict = raw?.takeRetainedValue() as? [NSNumber: [[String: Any]]] else { return [] }
-        let types: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
-        var pids = Set<pid_t>()
-        for (pid, assertions) in dict where assertions.contains(where: { types.contains($0["AssertType"] as? String ?? "") }) {
-            pids.insert(pid.int32Value)
+        let displayTypes: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
+        let systemTypes: Set<String> = ["PreventUserIdleSystemSleep", "NoIdleSleepAssertion", "PreventSystemSleep"]
+        var holders: [KeepAwakeHolder] = []
+        for (number, assertions) in dict {
+            let pid = number.int32Value
+            guard pid != getpid(), !isSystemProcess(pid) else { continue }
+            var display = false, system = false
+            for assertion in assertions {
+                let type = assertion["AssertType"] as? String ?? ""
+                let name = (assertion["AssertName"] as? String ?? "").lowercased()
+                if name.contains("audio") { continue }
+                if displayTypes.contains(type) { display = true }
+                if systemTypes.contains(type), !name.contains("video") { system = true }
+            }
+            guard display || system else { continue }
+            // An app that also keeps the Mac itself awake isn't just showing
+            // a video, so it isn't tied to the display its window is on.
+            holders.append(KeepAwakeHolder(pid: pid, name: processName(pid), keepsDisplayOn: display && !system))
         }
-        pids.remove(getpid())
-        return pids
+        return holders
+    }
+
+    static func isSystemProcess(_ pid: pid_t) -> Bool {
+        var buffer = [CChar](repeating: 0, count: 4096)
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return false }
+        let path = String(cString: buffer)
+        return ["/usr/libexec/", "/usr/sbin/", "/System/"].contains { path.hasPrefix($0) }
+    }
+
+    private static func processName(_ pid: pid_t) -> String {
+        if let name = NSRunningApplication(processIdentifier: pid)?.localizedName { return name }
+        var buffer = [CChar](repeating: 0, count: 256)
+        proc_name(pid, &buffer, 256)
+        return String(cString: buffer)
     }
 }
 

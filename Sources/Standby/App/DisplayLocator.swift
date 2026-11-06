@@ -77,6 +77,10 @@ enum WindowInspector {
         return windows(of: app.processIdentifier).first
     }
 
+    static func hasAnyWindow(pid: pid_t) -> Bool {
+        !windows(of: pid).isEmpty
+    }
+
     static func hasWindow(pid: pid_t, mostlyOn bounds: CGRect) -> Bool {
         windows(of: pid).contains { overlap($0, bounds) > 0.5 }
     }
