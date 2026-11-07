@@ -10,6 +10,8 @@ struct SkyScene: View {
     var location: GeoPoint
     var format: TimeFormat
     var weather: WeatherSnapshot?
+    var clock: OverlayClock = .digital
+    var tint: Tint = .orange
 
     var body: some View {
         let s = min(size.width / 1.6, size.height)
@@ -28,11 +30,17 @@ struct SkyScene: View {
             // The time sits on the dark hills, so the sky stays clear for the
             // sun and moon and the text is always readable.
             VStack(alignment: .leading, spacing: s * 0.012) {
-                Text(TimeText.clock(date, format: format))
-                    .font(.system(size: s * 0.2, weight: .thin))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .foregroundStyle(.white)
+                switch clock {
+                case .digital:
+                    Text(TimeText.clock(date, format: format))
+                        .font(.system(size: s * 0.2, weight: .thin))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .foregroundStyle(.white)
+                case .analog:
+                    AnalogDial(date: date, style: .analogFace(tint, face: .black.opacity(0.45)))
+                        .frame(width: s * 0.3, height: s * 0.3)
+                }
                 footer(sky, s: s)
             }
             .shadow(color: .black.opacity(0.3), radius: s * 0.015, y: s * 0.003)

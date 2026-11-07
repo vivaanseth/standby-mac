@@ -135,10 +135,17 @@ struct PhotosPage: View {
         return VStack(alignment: leading ? .leading : .trailing, spacing: -s * 0.01) {
             Text(TimeText.format(date, "EEEEMMMMd"))
                 .font(.system(size: s * 0.042, weight: .semibold))
-            Text(TimeText.clock(date, format: config.timeFormat))
-                .font(.system(size: s * 0.19, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText())
+            switch config.photoClock {
+            case .digital:
+                Text(TimeText.clock(date, format: config.timeFormat))
+                    .font(.system(size: s * 0.19, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+            case .analog:
+                AnalogDial(date: date, style: .analogFace(config.analogTint, face: .black.opacity(0.45)))
+                    .frame(width: s * 0.34, height: s * 0.34)
+                    .padding(.top, s * 0.025)
+            }
         }
         .foregroundStyle(.white)
         .shadow(color: .black.opacity(0.35), radius: s * 0.02, y: s * 0.004)

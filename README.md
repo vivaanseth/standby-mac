@@ -27,7 +27,7 @@ When you're not using your MacBook's screen, Standby turns it into a beautiful b
 
 No special permissions needed. It watches where your pointer and typing are, not what you're doing.
 
-### 🧩 17 widgets, stacked like on iPhone
+### 🧩 18 widgets, stacked like on iPhone
 
 Swipe up and down through Smart Stacks, and arrange up to six of them in five layouts.
 
@@ -36,7 +36,7 @@ Swipe up and down through Smart Stacks, and arrange up to six of them in five la
   <img src="screenshots/23-spotlight-5.png" width="49%" alt="Spotlight layout with five stacks">
 </p>
 
-Clock · Calendar · Up Next · Date · Digital Clock · World Clock · Weather · Batteries · Photos · Moon · Sunrise & Sunset · Flip Clock · Word Clock · Time Rings · Countdown · Note · Mac Activity
+Clock · Calendar · Up Next · Date · Digital Clock · World Clock · Weather · Batteries · Photos · Moon · Sunrise & Sunset · Flip Clock · Word Clock · Time Rings · Countdown · Note · Mac Activity · Analog Dial
 
 ### ⏰ Five clock faces
 
@@ -103,7 +103,7 @@ Open **Settings** from the menu bar icon (or press **⌘,**). Every change shows
 | **Views** | Which views appear (Widgets, Photos, Clock, Sky, Black), 12/24-hour time, °C/°F, weather city |
 | **External** | A separate setup for your external display: its views, widget stacks and layout, clock faces and colors, brightness, and when it starts |
 | **Widgets** | Number of stacks, layout, which widgets, Smart Rotate, countdown, note |
-| **Clock** | Which faces, their order, and their colors |
+| **Clock** | Which faces, their order, their colors, and whether Photos and Sky show a digital or analog clock |
 | **Photos** | Photo folder, how often photos change, where the time sits |
 | **Display** | Brightness, Night Mode schedule, burn-in protection |
 

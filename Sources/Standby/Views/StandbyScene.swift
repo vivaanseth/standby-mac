@@ -43,7 +43,8 @@ struct StandbyScene: View {
         case .clock: ClockPage(date: date, size: size, config: config, nav: nav)
         case .sky:
             SkyScene(date: date, size: size, location: ZoneInfo.current(for: config), format: config.timeFormat,
-                     weather: config.showWeatherOnClocks ? weather.snapshot : nil)
+                     weather: config.showWeatherOnClocks ? weather.snapshot : nil,
+                     clock: config.skyClock, tint: config.analogTint)
         case .blank: Color.black
         }
     }

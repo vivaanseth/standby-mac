@@ -566,6 +566,19 @@ struct ClockSettings: View {
                 }
             }
             Section {
+                Picker("On Photos", selection: $store.config.photoClock) {
+                    ForEach(OverlayClock.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("On Sky", selection: $store.config.skyClock) {
+                    ForEach(OverlayClock.allCases) { Text($0.title).tag($0) }
+                }
+            } header: {
+                Text("Clock on Other Views")
+            } footer: {
+                Text("Analog uses the Analog dial and its color, on every display. It's also a widget: add Analog Dial to any stack in the Widgets tab.")
+                    .settingsFootnote()
+            }
+            Section {
                 ClockStyleList(styles: $store.config.clockStyles)
                 Toggle("Show weather on clock faces", isOn: $store.config.showWeatherOnClocks)
             } header: {

@@ -19,6 +19,22 @@ struct DialStyle {
 
     static let widget = DialStyle()
 
+    /// The Analog clock face's dial: open, with tinted numerals and fine ticks.
+    /// `face` puts a backing behind it where it sits on a picture.
+    static func analogFace(_ tint: Tint, face: Color? = nil) -> DialStyle {
+        DialStyle(face: face,
+                  numerals: tint.light,
+                  numeralSize: 0.19,
+                  numeralRadius: 0.75,
+                  numeralWeight: .medium,
+                  minuteTicks: Color.white.opacity(0.32),
+                  hourTicks: .white,
+                  tickInset: 0.98,
+                  hands: .white,
+                  handWidth: 0.85,
+                  second: tint.base)
+    }
+
     static func worldClock(isDay: Bool) -> DialStyle {
         DialStyle(face: isDay ? .white : Palette.dialFace,
                   numerals: isDay ? .black : .white,

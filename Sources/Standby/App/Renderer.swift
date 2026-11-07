@@ -128,6 +128,21 @@ enum Renderer {
         custom.external.stacks[4] = StandbyConfig.stack(enabled: [.macStats])
         write(companion(date, custom), scale: 1, to: dir.appendingPathComponent("ext-custom-widgets.png"))
 
+        // The Analog dial as a widget, and on Photos and Sky.
+        var dial = base
+        dial.photoClock = .analog
+        dial.skyClock = .analog
+        dial.showSky = true
+        dial.stacks[0] = StandbyConfig.stack(enabled: [.analogFace])
+        for page in [PageKind.widgets, .photos, .sky] {
+            let n = StandbyNavigator()
+            n.apply(dial)
+            n.page = dial.visiblePages.firstIndex(of: page) ?? 0
+            write(StandbyScene(date: date, config: dial, nav: n)
+                .environmentObject(weather).environmentObject(calendar).environmentObject(photos).environmentObject(power)
+                .frame(width: 1440, height: 900), scale: 1, to: dir.appendingPathComponent("dial-\(page.rawValue).png"))
+        }
+
         // Sky on the built-in display.
         var builtInSky = base
         builtInSky.showSky = true

@@ -40,6 +40,9 @@ struct WidgetView: View {
         case .countdown: CountdownWidget(date: date, u: u, title: config.countdownTitle, target: config.countdownDate)
         case .note: NoteWidget(u: u, text: config.noteText)
         case .macStats: MacStatsWidget(u: u)
+        case .analogFace:
+            AnalogDial(date: date, style: .analogFace(config.analogTint))
+                .padding(3 * u)
         }
     }
 }

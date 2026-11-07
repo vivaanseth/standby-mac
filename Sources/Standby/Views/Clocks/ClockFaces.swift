@@ -59,17 +59,7 @@ struct AnalogFace: View {
     var body: some View {
         let s = unit(size)
         let d = s * 0.86
-        let style = DialStyle(face: nil,
-                              numerals: tint.light,
-                              numeralSize: 0.19,
-                              numeralRadius: 0.75,
-                              numeralWeight: .medium,
-                              minuteTicks: Color.white.opacity(0.32),
-                              hourTicks: .white,
-                              tickInset: 0.98,
-                              hands: .white,
-                              handWidth: 0.85,
-                              second: tint.base)
+        let style = DialStyle.analogFace(tint)
         HStack(spacing: 0) {
             AnalogDial(date: date, style: style)
                 .frame(width: d, height: d)

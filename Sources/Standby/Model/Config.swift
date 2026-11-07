@@ -48,7 +48,7 @@ enum ClockStyle: String, Codable, CaseIterable, Identifiable {
 
 enum WidgetKind: String, Codable, CaseIterable, Identifiable {
     case analogClock, calendarMonth, upNext, date, digitalClock, worldClock, weather, battery, photo
-    case moon, sun, flipClock, wordClock, rings, countdown, note, macStats
+    case moon, sun, flipClock, wordClock, rings, countdown, note, macStats, analogFace
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -69,6 +69,7 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
         case .countdown: "Countdown"
         case .note: "Note"
         case .macStats: "Mac Activity"
+        case .analogFace: "Analog Dial"
         }
     }
     var symbol: String {
@@ -90,8 +91,16 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
         case .countdown: "hourglass"
         case .note: "note.text"
         case .macStats: "cpu"
+        case .analogFace: "clock.circle"
         }
     }
+}
+
+/// How the time is drawn on views that aren't all clock (Photos and Sky).
+enum OverlayClock: String, Codable, CaseIterable, Identifiable {
+    case digital, analog
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
 }
 
 /// How the widget stacks are arranged on screen.
@@ -312,6 +321,8 @@ struct StandbyConfig: Codable, Equatable {
     var photoShuffle = true
     var photoKenBurns = true
     var photoClockPosition: PhotoClockPosition = .topTrailing
+    var photoClock: OverlayClock = .digital
+    var skyClock: OverlayClock = .digital
 
     // Display
     var brightness: Double = 1
