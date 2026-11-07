@@ -7,56 +7,52 @@ final class CompanionState: ObservableObject {
 }
 
 extension StandbyConfig {
-    /// The settings the external display starts from: the same Standby, but
-    /// opening on its own view and clock face.
+    /// These settings with the external display's profile in place of the
+    /// built-in display's. Everything else (night mode, weather, the photo
+    /// folder, world clock cities, and so on) is shared.
     var companionConfig: StandbyConfig {
         var c = self
-        switch externalStartPage {
+        let p = external
+        c.showWidgets = p.showWidgets
+        c.showPhotos = p.showPhotos
+        c.showClock = p.showClock
+        c.showSky = p.showSky
+        c.showBlank = p.showBlank
+        c.stacks = p.stacks
+        c.stackCount = p.stackCount
+        c.widgetLayout = p.widgetLayout
+        c.showWidgetBackgrounds = p.showWidgetBackgrounds
+        c.clockStyles = p.clockStyles
+        c.digitalTint = p.digitalTint
+        c.analogTint = p.analogTint
+        c.solarTint = p.solarTint
+        c.floatTint = p.floatTint
+        c.brightness = p.brightness
+        switch p.startPage {
         case .widgets: c.startPage = .widgets
         case .photos: c.startPage = .photos
         case .clock: c.startPage = .clock
+        case .sky: c.startPage = .sky
+        case .blank: c.startPage = .blank
         }
-        c.lastClockStyle = externalClockStyle
+        c.lastClockStyle = p.startClockStyle
         return c
     }
 
     var companionWantsPhotos: Bool {
-        externalStyle == .standby && (showPhotos || uses(.photo))
+        external.showPhotos || (external.showWidgets
+            && external.stacks.prefix(external.stackCount).contains { $0.contains { $0.kind == .photo && $0.enabled } })
     }
 }
 
-/// What an external display shows: Standby itself, the Sky, or black.
+/// What an external display shows: Standby, drawn with its own profile.
 struct CompanionScene: View {
     var date: Date
     var config: StandbyConfig
     @ObservedObject var nav: StandbyNavigator
-    @EnvironmentObject private var weather: WeatherService
 
     var body: some View {
-        GeometryReader { geo in
-            switch config.externalStyle {
-            case .sky:
-                SkyScene(date: date, size: geo.size, location: ZoneInfo.current(for: config),
-                         format: config.timeFormat, weather: config.showWeatherOnClocks ? weather.snapshot : nil)
-                    .offset(burnInShift)
-                    .animation(.easeInOut(duration: 2), value: burnInShift)
-                    .compositingGroup()
-                    .modifier(NightFilter(isOn: config.isNight(at: date)))
-                    .overlay(Color.black.opacity(1 - min(max(config.brightness, 0.1), 1)))
-            case .black:
-                Color.black
-            case .standby, .clock, .photos, .widgets:
-                StandbyScene(date: date, config: config, nav: nav)
-            }
-        }
-        .background(Color.black)
-    }
-
-    private var burnInShift: CGSize {
-        guard config.burnInProtection else { return .zero }
-        let pattern: [(CGFloat, CGFloat)] = [(0, 0), (2, 1), (3, -1), (1, -3), (-1, -2), (-3, -1), (-2, 2), (0, 3)]
-        let p = pattern[Int(date.timeIntervalSince1970 / 60) % pattern.count]
-        return CGSize(width: p.0, height: p.1)
+        StandbyScene(date: date, config: config.companionConfig, nav: nav)
     }
 }
 

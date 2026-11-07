@@ -90,6 +90,7 @@ final class StandbyController: ObservableObject {
         }
         overlay.onWake = { [weak self] in self?.dismiss() }
         nav.onPhotoStep = { [weak photos] delta in photos?.step(delta) }
+        companion.nav.onPhotoStep = { [weak photos] delta in photos?.step(delta) }
     }
 
     func start() {
@@ -386,7 +387,7 @@ final class StandbyController: ObservableObject {
             if externals.isEmpty || locked || !config.enabled { return hideCompanion(animated: !locked) }
             if externals != companion.displayIDs { companion.show(on: externals, config: config) }
             refreshLiveData(now: now)
-            if config.uses(.macStats), config.externalStyle == .standby, now.timeIntervalSince(lastLoadSample) >= 2 {
+            if config.uses(.macStats), now.timeIntervalSince(lastLoadSample) >= 2 {
                 lastLoadSample = now
                 power.refreshLoad()
             }
@@ -402,7 +403,7 @@ final class StandbyController: ObservableObject {
             let pointer = InputActivity.pointer()
             let overCompanion = companion.displayIDs.contains { CGDisplayBounds($0).contains(pointer) }
             var types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
-            if !overCompanion || config.externalStyle != .standby { types.append(.scrollWheel) }
+            if !overCompanion { types.append(.scrollWheel) }
             if companionTravel > companionWakeTravel || types.contains(where: { InputActivity.happened($0, within: dt) }) {
                 hideCompanion()
             }
@@ -430,7 +431,7 @@ final class StandbyController: ObservableObject {
         }
         if !wasVisible {
             refreshLiveData(now: Date(), force: !overlay.isVisible)
-            if config.companionWantsPhotos && !overlay.isVisible {
+            if config.companionWantsPhotos {
                 photos.configure(folder: config.photoFolder, shuffle: config.photoShuffle)
                 photos.start(interval: config.photoInterval)
             }
@@ -475,7 +476,7 @@ final class StandbyController: ObservableObject {
         defer { lastConfig = config }
         TransitionWindow.hiddenFromCapture = config.yieldToAgents
         nav.apply(config)
-        companion.nav.apply(config)
+        companion.nav.apply(config.companionConfig)
         let old = lastConfig
         if old?.weatherPlace != config.weatherPlace || old?.temperatureUnit != config.temperatureUnit {
             weather.refresh(config: config, force: true)

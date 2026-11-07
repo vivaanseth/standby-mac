@@ -5,7 +5,7 @@ import SwiftUI
 /// swipe in progress. Shared by drags, trackpad scrolls, and the keyboard.
 @MainActor
 final class StandbyNavigator: ObservableObject {
-    enum VerticalTarget: Equatable { case stack(Int), clock, photos }
+    enum VerticalTarget: Equatable { case stack(Int), clock, photos, fixed }
     private enum Axis { case horizontal, vertical }
 
     @Published var page = 0
@@ -53,6 +53,8 @@ final class StandbyNavigator: ObservableObject {
         case .widgets: start = .widgets
         case .photos: start = .photos
         case .clock: start = .clock
+        case .sky: start = .sky
+        case .blank: start = .blank
         }
         page = pageKinds.firstIndex(of: start) ?? 0
         clockIndex = config.enabledClockStyles.firstIndex(of: config.lastClockStyle) ?? 0
@@ -90,7 +92,7 @@ final class StandbyNavigator: ObservableObject {
                 stackIndices[i] += delta
             case .stack: break
             case .clock: clockIndex = next(clockIndex, delta, clockCount, wrap)
-            case .photos: break
+            case .photos, .fixed: break
             }
             vOffset = 0
         }
@@ -129,7 +131,7 @@ final class StandbyNavigator: ObservableObject {
         case .horizontal:
             hOffset = rubberBand(t.width, atStart: page == 0, atEnd: page >= pageKinds.count - 1)
         case .vertical:
-            guard let target = vTarget, target != .photos else { return }
+            guard let target = vTarget, target != .photos, target != .fixed else { return }
             if case .stack = target {
                 vOffset = t.height
             } else {
@@ -212,6 +214,7 @@ final class StandbyNavigator: ObservableObject {
             switch currentPage {
             case .widgets: target = verticalTarget(at: pointer, size: size)
             case .photos: target = .photos
+            case .sky, .blank: target = .fixed
             case .clock: target = .clock
             }
             stepVertical(target, delta)
@@ -239,6 +242,7 @@ final class StandbyNavigator: ObservableObject {
             let nearest = frames.indices.min { distance(frames[$0]) < distance(frames[$1]) } ?? 0
             return .stack(frames.firstIndex { $0.contains(point) } ?? nearest)
         case .photos: return .photos
+        case .sky, .blank: return .fixed
         case .clock: return .clock
         }
     }
@@ -253,7 +257,7 @@ final class StandbyNavigator: ObservableObject {
         case .stack(let i) where i < stackCounts.count: (((stackIndices[i] % stackCounts[i]) + stackCounts[i]) % stackCounts[i], stackCounts[i])
         case .stack: (0, 1)
         case .clock: (clockIndex, clockCount)
-        case .photos: (0, 1)
+        case .photos, .fixed: (0, 1)
         }
     }
 

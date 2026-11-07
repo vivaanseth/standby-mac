@@ -6,6 +6,7 @@ struct StandbyScene: View {
     var date: Date
     var config: StandbyConfig
     @ObservedObject var nav: StandbyNavigator
+    @EnvironmentObject private var weather: WeatherService
 
     var body: some View {
         GeometryReader { geo in
@@ -40,6 +41,10 @@ struct StandbyScene: View {
         case .widgets: WidgetsPage(date: date, size: size, config: config, nav: nav)
         case .photos: PhotosPage(date: date, size: size, config: config)
         case .clock: ClockPage(date: date, size: size, config: config, nav: nav)
+        case .sky:
+            SkyScene(date: date, size: size, location: ZoneInfo.current(for: config), format: config.timeFormat,
+                     weather: config.showWeatherOnClocks ? weather.snapshot : nil)
+        case .blank: Color.black
         }
     }
 

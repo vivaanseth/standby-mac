@@ -131,24 +131,69 @@ struct GeneralSettings: View {
 
 struct ExternalSettings: View {
     @ObservedObject var store: ConfigStore
+    @State private var previewPage: PageKind = .clock
+    @State private var clockStyle: ClockStyle = .world
 
     var body: some View {
         Form {
             Section {
-                ExternalPreviewCard(store: store)
-                Picker("Show", selection: $store.config.externalStyle) {
-                    ForEach(ExternalStyle.choices) { Text($0.title).tag($0) }
+                PreviewCard(store: store, page: previewPage, clockStyle: previewPage == .clock ? clockStyle : nil, external: true)
+                Picker("Preview", selection: $previewPage) {
+                    ForEach(PageKind.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                Text(store.config.externalStyle.summary).settingsFootnote()
-                if store.config.externalStyle == .standby {
-                    Picker("Open to", selection: $store.config.externalStartPage) {
-                        ForEach(PageKind.allCases) { Text($0.title).tag($0) }
-                    }
-                    Picker("Clock face", selection: $store.config.externalClockStyle) {
-                        ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
-                    }
+            } footer: {
+                Text("External displays have their own Standby, set up separately from your MacBook's. The photo folder, Night Mode schedule, weather, world clock cities, countdown and note are shared.")
+                    .settingsFootnote()
+            }
+            Section {
+                Toggle("Widgets", isOn: $store.config.external.showWidgets)
+                Toggle("Photos", isOn: $store.config.external.showPhotos)
+                Toggle("Clock", isOn: $store.config.external.showClock)
+                Toggle("Sky", isOn: $store.config.external.showSky)
+                Toggle("Black", isOn: $store.config.external.showBlank)
+                Picker("Open to", selection: $store.config.external.startPage) {
+                    ForEach(PageKind.allCases) { Text($0.title).tag($0) }
+                }
+                Button("Copy Everything from the Built-in Display") {
+                    let start = store.config.external.startPage
+                    let face = store.config.external.startClockStyle
+                    store.config.external = store.config.profileMatchingBuiltIn()
+                    store.config.external.startPage = start
+                    store.config.external.startClockStyle = face
+                }
+            } header: {
+                Text("Views")
+            }
+            StackSettings(stacks: $store.config.external.stacks,
+                          count: $store.config.external.stackCount,
+                          layout: $store.config.external.widgetLayout)
+            Section {
+                Toggle("Show widget backgrounds", isOn: $store.config.external.showWidgetBackgrounds)
+            }
+            Section("Clock") {
+                Picker("Style", selection: $clockStyle) {
+                    ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                if clockStyle.hasTint {
+                    SwatchPicker(tint: Binding(
+                        get: { store.config.external.tint(for: clockStyle) },
+                        set: { store.config.external.setTint($0, for: clockStyle) }))
+                } else {
+                    Text("The World clock can't be recolored.").foregroundStyle(.secondary)
+                }
+                ClockStyleList(styles: $store.config.external.clockStyles)
+                Picker("Open to clock face", selection: $store.config.external.startClockStyle) {
+                    ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
+                }
+            }
+            Section("Brightness") {
+                HStack {
+                    Image(systemName: "sun.min")
+                    Slider(value: $store.config.external.brightness, in: 0.2...1)
+                    Image(systemName: "sun.max")
                 }
             }
             Section {
@@ -162,32 +207,70 @@ struct ExternalSettings: View {
             } header: {
                 Text("When Neither Display Is in Use")
             } footer: {
-                Text("While you're using the external display, only the built-in display goes into Standby. Once there's no input at all, external displays get this screen too. Any key, click, scroll or pointer movement brings them back; the built-in display stays in Standby until you use it.")
+                Text("While you're using the external display, only the built-in display goes into Standby. Once there's no input at all, external displays get this screen too. Any key, click or pointer movement brings them back; the built-in display stays in Standby until you use it.")
                     .settingsFootnote()
             }
         }
         .formStyle(.grouped)
+        .onAppear {
+            previewPage = store.config.external.startPage
+            clockStyle = store.config.external.startClockStyle
+        }
     }
 }
 
-/// A live 16:9 miniature of the external display.
-struct ExternalPreviewCard: View {
-    @ObservedObject var store: ConfigStore
-    @StateObject private var nav = StandbyNavigator()
+/// Number of stacks, layout, and what's in each stack, for either display.
+struct StackSettings: View {
+    @Binding var stacks: [[WidgetSlot]]
+    @Binding var count: Int
+    @Binding var layout: WidgetLayout
 
     var body: some View {
-        let config = store.config
-        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: 1)) { timeline in
-            CompanionScene(date: timeline.date, config: config, nav: nav)
+        Section {
+            Picker("Number of stacks", selection: $count) {
+                ForEach(1...StandbyConfig.maxStacks, id: \.self) { Text("\($0)").tag($0) }
+            }
+            .pickerStyle(.segmented)
+            if count > 1 {
+                Picker("Layout", selection: $layout) {
+                    ForEach(WidgetLayout.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                Text(layout.summary).settingsFootnote()
+            }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],
+                      alignment: .leading, spacing: 16) {
+                ForEach(0..<count, id: \.self) { i in
+                    StackEditor(title: stackTitle(i), slots: $stacks[i])
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Stacks")
+        } footer: {
+            Text("Each stack is a Smart Stack: check the widgets it holds and drag to reorder. Swipe up or down on a stack (or press ↑ ↓ with the pointer over it) to flip through it; it loops around.")
+                .settingsFootnote()
         }
-        .aspectRatio(16 / 9, contentMode: .fit)
-        .frame(maxWidth: 520)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
-        .onAppear { nav.prepareForShow(config.companionConfig) }
-        .onChange(of: config) { nav.prepareForShow(config.companionConfig) }
+    }
+}
+
+/// Which clock faces appear, and their order, for either display.
+struct ClockStyleList: View {
+    @Binding var styles: [ClockSlot]
+
+    var body: some View {
+        List {
+            ForEach($styles) { $slot in
+                HStack(spacing: 8) {
+                    Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary)
+                    Toggle(slot.style.title, isOn: $slot.enabled).toggleStyle(.checkbox)
+                    Spacer()
+                }
+            }
+            .onMove { styles.move(fromOffsets: $0, toOffset: $1) }
+        }
+        .listStyle(.bordered(alternatesRowBackgrounds: true))
+        .frame(height: CGFloat(styles.count) * 26 + 8)
     }
 }
 
@@ -205,6 +288,8 @@ struct ViewsSettings: View {
                 Toggle("Widgets", isOn: $store.config.showWidgets)
                 Toggle("Photos", isOn: $store.config.showPhotos)
                 Toggle("Clock", isOn: $store.config.showClock)
+                Toggle("Sky", isOn: $store.config.showSky)
+                Toggle("Black", isOn: $store.config.showBlank)
                 Picker("Open to", selection: $store.config.startPage) {
                     ForEach(StartPage.allCases) { Text($0.title).tag($0) }
                 }
@@ -233,6 +318,8 @@ struct ViewsSettings: View {
         case .widgets: .widgets
         case .photos: .photos
         case .clock: .clock
+        case .sky: .sky
+        case .blank: .blank
         }
     }
 }
@@ -323,31 +410,9 @@ struct WidgetsSettings: View {
             Section {
                 PreviewCard(store: store, page: .widgets)
             }
-            Section {
-                Picker("Number of stacks", selection: $store.config.stackCount) {
-                    ForEach(1...StandbyConfig.maxStacks, id: \.self) { Text("\($0)").tag($0) }
-                }
-                .pickerStyle(.segmented)
-                if store.config.stackCount > 1 {
-                    Picker("Layout", selection: $store.config.widgetLayout) {
-                        ForEach(WidgetLayout.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    Text(store.config.widgetLayout.summary).settingsFootnote()
-                }
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],
-                          alignment: .leading, spacing: 16) {
-                    ForEach(0..<store.config.stackCount, id: \.self) { i in
-                        StackEditor(title: stackTitle(i), slots: $store.config.stacks[i])
-                    }
-                }
-                .padding(.vertical, 4)
-            } header: {
-                Text("Stacks")
-            } footer: {
-                Text("Each stack is a Smart Stack: check the widgets it holds and drag to reorder. Swipe up or down on a stack (or press ↑ ↓ with the pointer over it) to flip through it; it loops around.")
-                    .settingsFootnote()
-            }
+            StackSettings(stacks: $store.config.stacks,
+                          count: $store.config.stackCount,
+                          layout: $store.config.widgetLayout)
             Section("Behavior") {
                 Toggle("Smart Rotate", isOn: $store.config.smartRotate)
                 Picker("Rotate every", selection: $store.config.smartRotateMinutes) {
@@ -501,18 +566,7 @@ struct ClockSettings: View {
                 }
             }
             Section {
-                List {
-                    ForEach($store.config.clockStyles) { $slot in
-                        HStack(spacing: 8) {
-                            Image(systemName: "line.3.horizontal").foregroundStyle(.tertiary)
-                            Toggle(slot.style.title, isOn: $slot.enabled).toggleStyle(.checkbox)
-                            Spacer()
-                        }
-                    }
-                    .onMove { store.config.clockStyles.move(fromOffsets: $0, toOffset: $1) }
-                }
-                .listStyle(.bordered(alternatesRowBackgrounds: true))
-                .frame(height: CGFloat(store.config.clockStyles.count) * 26 + 8)
+                ClockStyleList(styles: $store.config.clockStyles)
                 Toggle("Show weather on clock faces", isOn: $store.config.showWeatherOnClocks)
             } header: {
                 Text("Styles")
@@ -666,6 +720,8 @@ struct PreviewCard: View {
     @ObservedObject var store: ConfigStore
     var page: PageKind
     var clockStyle: ClockStyle?
+    /// Shows the external display's profile, at its 16:9 shape.
+    var external = false
     @StateObject private var nav = StandbyNavigator()
 
     var body: some View {
@@ -673,8 +729,8 @@ struct PreviewCard: View {
         TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: 1)) { timeline in
             StandbyScene(date: timeline.date, config: config, nav: nav)
         }
-        .aspectRatio(1.6, contentMode: .fit)
-        .frame(maxWidth: 480)
+        .aspectRatio(external ? 16 / 9 : 1.6, contentMode: .fit)
+        .frame(maxWidth: external ? 520 : 480)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
         .frame(maxWidth: .infinity)
@@ -685,10 +741,12 @@ struct PreviewCard: View {
 
     /// The real settings, narrowed to the one page (and clock style) on show.
     private var previewConfig: StandbyConfig {
-        var c = store.config
+        var c = external ? store.config.companionConfig : store.config
         c.showWidgets = page == .widgets
         c.showPhotos = page == .photos
         c.showClock = page == .clock
+        c.showSky = page == .sky
+        c.showBlank = page == .blank
         c.burnInProtection = false
         if let clockStyle {
             c.clockStyles = [ClockSlot(style: clockStyle, enabled: true)]

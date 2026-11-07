@@ -2,19 +2,21 @@ import Foundation
 import SwiftUI
 
 enum PageKind: String, Codable, CaseIterable, Identifiable {
-    case widgets, photos, clock
+    case widgets, photos, clock, sky, blank
     var id: String { rawValue }
     var title: String {
         switch self {
         case .widgets: "Widgets"
         case .photos: "Photos"
         case .clock: "Clock"
+        case .sky: "Sky"
+        case .blank: "Black"
         }
     }
 }
 
 enum StartPage: String, Codable, CaseIterable, Identifiable {
-    case lastUsed, widgets, photos, clock
+    case lastUsed, widgets, photos, clock, sky, blank
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -22,6 +24,8 @@ enum StartPage: String, Codable, CaseIterable, Identifiable {
         case .widgets: "Widgets"
         case .photos: "Photos"
         case .clock: "Clock"
+        case .sky: "Sky"
+        case .blank: "Black"
         }
     }
 }
@@ -114,33 +118,50 @@ enum WidgetLayout: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/// What appears on external displays once nothing is being used at all.
-enum ExternalStyle: String, Codable, CaseIterable, Identifiable {
-    case standby, sky, black
-    /// Earlier single-view styles, now Standby opening on that view; kept so
-    /// saved settings still decode.
-    case clock, photos, widgets
-    var id: String { rawValue }
-    /// The styles offered in Settings.
-    static let choices: [ExternalStyle] = [.standby, .sky, .black]
-    var title: String {
-        switch self {
-        case .standby: "Standby"
-        case .sky: "Sky"
-        case .clock: "Clock"
-        case .photos: "Photos"
-        case .widgets: "Widgets"
-        case .black: "Black"
+/// How the external display used to be configured; read once to seed its
+/// profile from settings saved by earlier versions.
+enum ExternalStyle: String, Codable {
+    case standby, sky, black, clock, photos, widgets
+}
+
+/// What one external display shows. The built-in display's equivalents live
+/// directly on `StandbyConfig`.
+struct DisplayProfile: Codable, Equatable {
+    var showWidgets = true
+    var showPhotos = true
+    var showClock = true
+    var showSky = false
+    var showBlank = false
+    var startPage: PageKind = .clock
+    var startClockStyle: ClockStyle = .world
+    var stacks: [[WidgetSlot]] = StandbyConfig.defaultStacks
+    var stackCount = 2
+    var widgetLayout: WidgetLayout = .grid
+    var showWidgetBackgrounds = false
+    var clockStyles: [ClockSlot] = ClockStyle.allCases.map { ClockSlot(style: $0, enabled: true) }
+    var digitalTint: Tint = .red
+    var analogTint: Tint = .orange
+    var solarTint: Tint = .orange
+    var floatTint: Tint = .pink
+    var brightness: Double = 1
+
+    func tint(for style: ClockStyle) -> Tint {
+        switch style {
+        case .digital: digitalTint
+        case .analog: analogTint
+        case .solar: solarTint
+        case .float: floatTint
+        case .world: .white
         }
     }
-    var summary: String {
-        switch self {
-        case .standby: "The same Standby as your MacBook (widgets, photos, and clocks) with its own swiping. Swipe with two fingers while the pointer is over this display."
-        case .sky: "A window onto the sky where you are: the real sun and moon, colors that follow the time of day, and stars after dark."
-        case .clock: "A full-screen clock face."
-        case .photos: "A slideshow from your photo folder."
-        case .widgets: "Your widget stacks, as on the built-in display."
-        case .black: "Just black, to save energy and rest the screen."
+
+    mutating func setTint(_ tint: Tint, for style: ClockStyle) {
+        switch style {
+        case .digital: digitalTint = tint
+        case .analog: analogTint = tint
+        case .solar: solarTint = tint
+        case .float: floatTint = tint
+        case .world: break
         }
     }
 }
@@ -239,6 +260,8 @@ struct StandbyConfig: Codable, Equatable {
     var externalStartPage: PageKind = .clock
     var externalClockStyle: ClockStyle = .world
     var externalStyleMigrated = false
+    var external = DisplayProfile()
+    var externalProfileSeeded = false
     var clamshellEnabled = true
     var onlyWhenCharging = false
     var respectDisplaySleepAssertions = true
@@ -251,6 +274,8 @@ struct StandbyConfig: Codable, Equatable {
     // Views
     var showWidgets = true
     var showPhotos = true
+    var showSky = false
+    var showBlank = false
     var showClock = true
     var startPage: StartPage = .lastUsed
     var lastPage: PageKind = .widgets
@@ -316,6 +341,8 @@ struct StandbyConfig: Codable, Equatable {
         if showWidgets { pages.append(.widgets) }
         if showPhotos { pages.append(.photos) }
         if showClock { pages.append(.clock) }
+        if showSky { pages.append(.sky) }
+        if showBlank { pages.append(.blank) }
         return pages.isEmpty ? [.clock] : pages
     }
 
@@ -330,7 +357,9 @@ struct StandbyConfig: Codable, Equatable {
     }
 
     func uses(_ kind: WidgetKind) -> Bool {
-        showWidgets && visibleStacks.contains { $0.contains(kind) }
+        if showWidgets && visibleStacks.contains(where: { $0.contains(kind) }) { return true }
+        guard externalEnabled, external.showWidgets else { return false }
+        return external.stacks.prefix(external.stackCount).contains { $0.contains { $0.kind == kind && $0.enabled } }
     }
 
     func tint(for style: ClockStyle) -> Tint {
@@ -366,6 +395,43 @@ struct StandbyConfig: Codable, Equatable {
         }
     }
 
+    /// A profile with everything the built-in display currently shows.
+    func profileMatchingBuiltIn() -> DisplayProfile {
+        var p = DisplayProfile()
+        p.showWidgets = showWidgets
+        p.showPhotos = showPhotos
+        p.showClock = showClock
+        p.showSky = showSky
+        p.showBlank = showBlank
+        p.stacks = stacks
+        p.stackCount = stackCount
+        p.widgetLayout = widgetLayout
+        p.showWidgetBackgrounds = showWidgetBackgrounds
+        p.clockStyles = clockStyles
+        p.digitalTint = digitalTint
+        p.analogTint = analogTint
+        p.solarTint = solarTint
+        p.floatTint = floatTint
+        p.brightness = brightness
+        return p
+    }
+
+    private static func completed(_ stacks: [[WidgetSlot]]) -> [[WidgetSlot]] {
+        var out = stacks
+        while out.count < maxStacks { out.append(defaultStacks[out.count]) }
+        out = Array(out.prefix(maxStacks))
+        for i in out.indices {
+            for kind in WidgetKind.allCases where !out[i].contains(where: { $0.kind == kind }) {
+                out[i].append(WidgetSlot(kind: kind, enabled: false))
+            }
+        }
+        return out
+    }
+
+    private static func completed(_ styles: [ClockSlot]) -> [ClockSlot] {
+        styles + ClockStyle.allCases.filter { s in !styles.contains { $0.style == s } }.map { ClockSlot(style: $0, enabled: true) }
+    }
+
     /// Adds anything introduced after the settings were first saved.
     mutating func normalize() {
         switch externalStyle {
@@ -379,17 +445,28 @@ struct StandbyConfig: Codable, Equatable {
             if externalStyle == .sky { externalStyle = .standby }
             externalStyleMigrated = true
         }
-        while stacks.count < Self.maxStacks { stacks.append(Self.defaultStacks[stacks.count]) }
-        stacks = Array(stacks.prefix(Self.maxStacks))
-        for i in stacks.indices {
-            for kind in WidgetKind.allCases where !stacks[i].contains(where: { $0.kind == kind }) {
-                stacks[i].append(WidgetSlot(kind: kind, enabled: false))
-            }
-        }
+        stacks = Self.completed(stacks)
         stackCount = min(max(stackCount, 1), Self.maxStacks)
-        for style in ClockStyle.allCases where !clockStyles.contains(where: { $0.style == style }) {
-            clockStyles.append(ClockSlot(style: style, enabled: true))
+        clockStyles = Self.completed(clockStyles)
+        // Until now the external display drew with the built-in's settings, so
+        // its own profile starts as a copy of them.
+        if !externalProfileSeeded {
+            external = profileMatchingBuiltIn()
+            external.startPage = externalStartPage
+            external.startClockStyle = externalClockStyle
+            if externalStyle == .sky || externalStyle == .black {
+                external.showWidgets = false
+                external.showPhotos = false
+                external.showClock = false
+                external.showSky = externalStyle == .sky
+                external.showBlank = externalStyle == .black
+                external.startPage = externalStyle == .sky ? .sky : .blank
+            }
+            externalProfileSeeded = true
         }
+        external.stacks = Self.completed(external.stacks)
+        external.stackCount = min(max(external.stackCount, 1), Self.maxStacks)
+        external.clockStyles = Self.completed(external.clockStyles)
     }
 }
 
@@ -421,14 +498,18 @@ final class ConfigStore: ObservableObject {
     /// Decodes stored settings on top of the defaults so that settings added in
     /// later versions pick up their default values instead of failing to decode.
     private static func load(from defaults: UserDefaults) -> StandbyConfig {
+        // The merge base stays un-normalized, so one-time migrations still run
+        // for settings saved before they existed.
         let fallback = StandbyConfig()
+        var fresh = fallback
+        fresh.normalize()
         guard let data = defaults.data(forKey: key),
               let stored = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let baseData = try? JSONEncoder().encode(fallback),
               let base = try? JSONSerialization.jsonObject(with: baseData) as? [String: Any],
               let mergedData = try? JSONSerialization.data(withJSONObject: merge(base, migrate(stored, base: base))),
               var config = try? JSONDecoder().decode(StandbyConfig.self, from: mergedData)
-        else { return fallback }
+        else { return fresh }
         config.normalize()
         return config
     }

@@ -102,16 +102,41 @@ enum Renderer {
             cal.timeZone = .current
             let when = cal.date(from: DateComponents(year: 2026, month: 10, day: 28, hour: hour, minute: minute, second: 14))!
             var config = base
-            config.externalStyle = .sky
+            config.external.showWidgets = false
+            config.external.showPhotos = false
+            config.external.showClock = false
+            config.external.showSky = true
+            config.external.startPage = .sky
             write(companion(when, config), scale: 1, to: dir.appendingPathComponent("ext-sky-\(name).png"))
         }
         for (page, face) in [(PageKind.clock, ClockStyle.world), (.clock, .digital), (.widgets, .world), (.photos, .world)] {
             var config = base
-            config.externalStyle = .standby
-            config.externalStartPage = page
-            config.externalClockStyle = face
+            config.external.startPage = page
+            config.external.startClockStyle = face
             write(companion(date, config), scale: 1, to: dir.appendingPathComponent("ext-standby-\(page.rawValue)-\(face.rawValue).png"))
         }
+
+        // A profile of its own, different from the built-in display's.
+        var custom = base
+        custom.external.startPage = .widgets
+        custom.external.stackCount = 5
+        custom.external.widgetLayout = .spotlight
+        custom.external.stacks[0] = StandbyConfig.stack(enabled: [.digitalClock])
+        custom.external.stacks[1] = StandbyConfig.stack(enabled: [.moon])
+        custom.external.stacks[2] = StandbyConfig.stack(enabled: [.rings])
+        custom.external.stacks[3] = StandbyConfig.stack(enabled: [.weather])
+        custom.external.stacks[4] = StandbyConfig.stack(enabled: [.macStats])
+        write(companion(date, custom), scale: 1, to: dir.appendingPathComponent("ext-custom-widgets.png"))
+
+        // Sky on the built-in display.
+        var builtInSky = base
+        builtInSky.showSky = true
+        let skyNav = StandbyNavigator()
+        skyNav.apply(builtInSky)
+        skyNav.page = builtInSky.visiblePages.firstIndex(of: .sky) ?? 0
+        write(StandbyScene(date: date, config: builtInSky, nav: skyNav)
+            .environmentObject(weather).environmentObject(calendar).environmentObject(photos).environmentObject(power)
+            .frame(width: 1440, height: 900), scale: 1, to: dir.appendingPathComponent("builtin-sky.png"))
 
         func companion(_ when: Date, _ config: StandbyConfig) -> some View {
             let nav = StandbyNavigator()

@@ -59,7 +59,7 @@ A slideshow from any folder, with a gentle zoom and the time in the corner.
 <p align="center"><img src="screenshots/06-photos.png" width="60%" alt="Photos view"></p>
 
 ### 🌄 Your external monitor, too
-When nothing is in use, your external display shows its own Standby: by default the clock, to complement the widgets on your MacBook. Or choose **Sky**, a live window onto the sky where you are.
+When nothing is in use, your external display shows its own Standby, with its own widgets, layout, clock faces and colors, set up separately from your MacBook's. **Sky**, a live window onto the sky where you are, and plain **Black** are views you can use on either display.
 
 <p align="center">
   <img src="screenshots/ext-standby-clock-digital.png" width="49%" alt="Standby on an external display">
@@ -100,8 +100,8 @@ Open **Settings** from the menu bar icon (or press **⌘,**). Every change shows
 | Tab | What you can change |
 |---|---|
 | **General** | When Standby starts, what wakes it, open at login, keyboard shortcut |
-| **Views** | Which views appear, 12/24-hour time, °C/°F, weather city |
-| **External** | What your external display shows, and when |
+| **Views** | Which views appear (Widgets, Photos, Clock, Sky, Black), 12/24-hour time, °C/°F, weather city |
+| **External** | A separate setup for your external display: its views, widget stacks and layout, clock faces and colors, brightness, and when it starts |
 | **Widgets** | Number of stacks, layout, which widgets, Smart Rotate, countdown, note |
 | **Clock** | Which faces, their order, and their colors |
 | **Photos** | Photo folder, how often photos change, where the time sits |
