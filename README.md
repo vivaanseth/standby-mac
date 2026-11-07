@@ -138,7 +138,7 @@ An app may be keeping your Mac awake, such as Caffeinate, Amphetamine, an AI age
 <details>
 <summary><b>Does Standby get in the way of AI agents that use the screen?</b></summary>
 
-No. Standby is left out of screenshots, so an agent sees what's really on the screen. When something captures the screen or sends automated mouse input, Standby leaves every display and stays away for 2 minutes after the last activity. Your own screenshots and screen sharing count too. You can turn this off in <b>Settings → General</b>. Scripts can ask for the same thing with <code>--yield</code>.
+No. Standby is left out of screenshots, so an agent sees what's really on the screen. When an app sends automated mouse input or runs the <code>screencapture</code> command, Standby leaves every display and stays away for 2 minutes after the last activity. You can turn this off in <b>Settings → General</b>. Scripts can ask for the same thing with <code>--yield</code>.
 </details>
 
 <details>
