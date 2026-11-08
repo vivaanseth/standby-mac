@@ -101,7 +101,7 @@ Open **Settings** from the menu bar icon (or press **⌘,**). Every change shows
 |---|---|
 | **General** | When Standby starts, what wakes it, open at login, keyboard shortcut |
 | **Views** | Which views appear (Widgets, Photos, Clock, Sky, Black), 12/24-hour time, °C/°F, weather city |
-| **External** | A separate setup for your external display: its views, widget stacks and layout, clock faces and colors, brightness, and when it starts |
+| **External** | What your external display opens to and when it starts. It matches your MacBook's setup, or turn off **Same as built-in display** to give it its own views, widgets, clock faces, colors and brightness |
 | **Widgets** | Number of stacks, layout, which widgets, Smart Rotate, countdown, note |
 | **Clock** | Which faces, their order, their colors, and whether Photos and Sky show a digital or analog clock |
 | **Photos** | Photo folder, how often photos change, where the time sits |

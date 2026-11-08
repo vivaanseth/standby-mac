@@ -13,6 +13,7 @@ extension StandbyConfig {
     var companionConfig: StandbyConfig {
         var c = self
         let p = external
+        if !p.useBuiltInSettings {
         c.showWidgets = p.showWidgets
         c.showPhotos = p.showPhotos
         c.showClock = p.showClock
@@ -28,6 +29,7 @@ extension StandbyConfig {
         c.solarTint = p.solarTint
         c.floatTint = p.floatTint
         c.brightness = p.brightness
+        }
         switch p.startPage {
         case .widgets: c.startPage = .widgets
         case .photos: c.startPage = .photos
@@ -40,8 +42,8 @@ extension StandbyConfig {
     }
 
     var companionWantsPhotos: Bool {
-        external.showPhotos || (external.showWidgets
-            && external.stacks.prefix(external.stackCount).contains { $0.contains { $0.kind == .photo && $0.enabled } })
+        let c = companionConfig
+        return c.showPhotos || (c.showWidgets && c.visibleStacks.contains { $0.contains(.photo) })
     }
 }
 

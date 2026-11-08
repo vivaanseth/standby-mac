@@ -62,6 +62,7 @@ final class StandbyController: ObservableObject {
     /// let go of the mouse and keyboard for a moment since it appeared.
     private var companionArmed = false
     private var companionWakeTravel: CGFloat = 30
+    private var companionShownAt = Date.distantPast
     private var lastStatusUpdate = Date.distantPast
     private let awake = DisplayAwakeAssertion()
     private var observers: [NSObjectProtocol] = []
@@ -392,9 +393,15 @@ final class StandbyController: ObservableObject {
                 power.refreshLoad()
             }
             guard now >= companionGraceUntil else { return }
+            // A click or key press always takes it down.
+            let deliberate: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+            if deliberate.contains(where: { InputActivity.happened($0, within: dt) }) { return hideCompanion() }
             if !companionArmed {
-                // Still moving from starting it by hand: wait until you settle.
-                if InputActivity.secondsSinceAnyInput() >= 0.8 { companionArmed = true }
+                // Pointer movement only counts once the hand that started it
+                // has settled, or after a few seconds regardless.
+                if InputActivity.secondsSinceAnyInput() >= 0.8 || now.timeIntervalSince(companionShownAt) > 3 {
+                    companionArmed = true
+                }
                 return
             }
             companionTravel += movement
@@ -402,9 +409,7 @@ final class StandbyController: ObservableObject {
             // the built-in display, instead of waking it.
             let pointer = InputActivity.pointer()
             let overCompanion = companion.displayIDs.contains { CGDisplayBounds($0).contains(pointer) }
-            var types: [CGEventType] = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
-            if !overCompanion { types.append(.scrollWheel) }
-            if companionTravel > companionWakeTravel || types.contains(where: { InputActivity.happened($0, within: dt) }) {
+            if companionTravel > companionWakeTravel || (!overCompanion && InputActivity.happened(.scrollWheel, within: dt)) {
                 hideCompanion()
             }
             return
@@ -427,6 +432,7 @@ final class StandbyController: ObservableObject {
         companionTravel = 0
         if !wasVisible {
             companionArmed = false
+            companionShownAt = Date()
             companionWakeTravel = manual ? 80 : 30
         }
         if !wasVisible {

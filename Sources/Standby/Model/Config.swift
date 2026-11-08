@@ -136,6 +136,9 @@ enum ExternalStyle: String, Codable {
 /// What one external display shows. The built-in display's equivalents live
 /// directly on `StandbyConfig`.
 struct DisplayProfile: Codable, Equatable {
+    /// Follow the built-in display's views, widgets, clocks and brightness,
+    /// keeping only this profile's starting view and clock face.
+    var useBuiltInSettings = true
     var showWidgets = true
     var showPhotos = true
     var showClock = true
@@ -369,7 +372,7 @@ struct StandbyConfig: Codable, Equatable {
 
     func uses(_ kind: WidgetKind) -> Bool {
         if showWidgets && visibleStacks.contains(where: { $0.contains(kind) }) { return true }
-        guard externalEnabled, external.showWidgets else { return false }
+        guard externalEnabled, !external.useBuiltInSettings, external.showWidgets else { return false }
         return external.stacks.prefix(external.stackCount).contains { $0.contains { $0.kind == kind && $0.enabled } }
     }
 

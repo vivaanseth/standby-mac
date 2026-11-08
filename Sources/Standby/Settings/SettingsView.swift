@@ -144,22 +144,37 @@ struct ExternalSettings: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
             } footer: {
-                Text("External displays have their own Standby, set up separately from your MacBook's. The photo folder, Night Mode schedule, weather, world clock cities, countdown and note are shared.")
+                Text("What your external display shows when nothing is in use. The photo folder, Night Mode schedule, weather, world clock cities, countdown and note are always shared with your MacBook.")
                     .settingsFootnote()
             }
+            Section {
+                Toggle("Same as built-in display", isOn: $store.config.external.useBuiltInSettings)
+                Picker("Open to", selection: $store.config.external.startPage) {
+                    ForEach(PageKind.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("Open to clock face", selection: $store.config.external.startClockStyle) {
+                    ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
+                }
+            } header: {
+                Text("Setup")
+            } footer: {
+                Text(store.config.external.useBuiltInSettings
+                     ? "Uses the views, widgets, clock faces and brightness from the Views, Widgets and Clock tabs. Turn this off to set up the external display separately."
+                     : "The external display has its own setup below.")
+                    .settingsFootnote()
+            }
+            if !store.config.external.useBuiltInSettings {
             Section {
                 Toggle("Widgets", isOn: $store.config.external.showWidgets)
                 Toggle("Photos", isOn: $store.config.external.showPhotos)
                 Toggle("Clock", isOn: $store.config.external.showClock)
                 Toggle("Sky", isOn: $store.config.external.showSky)
                 Toggle("Black", isOn: $store.config.external.showBlank)
-                Picker("Open to", selection: $store.config.external.startPage) {
-                    ForEach(PageKind.allCases) { Text($0.title).tag($0) }
-                }
                 Button("Copy Everything from the Built-in Display") {
                     let start = store.config.external.startPage
                     let face = store.config.external.startClockStyle
                     store.config.external = store.config.profileMatchingBuiltIn()
+                    store.config.external.useBuiltInSettings = false
                     store.config.external.startPage = start
                     store.config.external.startClockStyle = face
                 }
@@ -185,9 +200,6 @@ struct ExternalSettings: View {
                     Text("The World clock can't be recolored.").foregroundStyle(.secondary)
                 }
                 ClockStyleList(styles: $store.config.external.clockStyles)
-                Picker("Open to clock face", selection: $store.config.external.startClockStyle) {
-                    ForEach(ClockStyle.allCases) { Text($0.title).tag($0) }
-                }
             }
             Section("Brightness") {
                 HStack {
@@ -195,6 +207,7 @@ struct ExternalSettings: View {
                     Slider(value: $store.config.external.brightness, in: 0.2...1)
                     Image(systemName: "sun.max")
                 }
+            }
             }
             Section {
                 Toggle("Show on external displays when nothing is in use", isOn: $store.config.externalEnabled)
