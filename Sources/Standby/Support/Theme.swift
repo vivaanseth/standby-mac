@@ -66,6 +66,19 @@ enum Tint: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// The widgets' accent color, or nil for Apple's own colors (red calendar,
+/// orange second hands, and so on).
+private struct WidgetTintKey: EnvironmentKey {
+    static let defaultValue: Tint? = nil
+}
+
+extension EnvironmentValues {
+    var widgetTint: Tint? {
+        get { self[WidgetTintKey.self] }
+        set { self[WidgetTintKey.self] = newValue }
+    }
+}
+
 /// StandBy's red-only night rendering, applied to the whole scene.
 struct NightFilter: ViewModifier {
     var isOn: Bool

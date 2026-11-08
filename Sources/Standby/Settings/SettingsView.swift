@@ -185,7 +185,10 @@ struct ExternalSettings: View {
                           count: $store.config.external.stackCount,
                           layout: $store.config.external.widgetLayout)
             Section {
+                WidgetTintPicker(tint: $store.config.external.widgetTint)
                 Toggle("Show widget backgrounds", isOn: $store.config.external.showWidgetBackgrounds)
+            } header: {
+                Text("Widget Color")
             }
             Section("Clock") {
                 Picker("Style", selection: $clockStyle) {
@@ -426,6 +429,14 @@ struct WidgetsSettings: View {
             StackSettings(stacks: $store.config.stacks,
                           count: $store.config.stackCount,
                           layout: $store.config.widgetLayout)
+            Section {
+                WidgetTintPicker(tint: $store.config.widgetTint)
+            } header: {
+                Text("Widget Color")
+            } footer: {
+                Text("Default keeps Apple's colors. A color tints every widget's accents: calendar headers, second hands, rings, gauges and more. Battery levels stay green, yellow and red.")
+                    .settingsFootnote()
+            }
             Section("Behavior") {
                 Toggle("Smart Rotate", isOn: $store.config.smartRotate)
                 Picker("Rotate every", selection: $store.config.smartRotateMinutes) {
@@ -606,8 +617,28 @@ struct ClockSettings: View {
     }
 }
 
+/// Default (Apple's colors) followed by the color swatches.
+struct WidgetTintPicker: View {
+    @Binding var tint: Tint?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(AngularGradient(colors: [Palette.red, Palette.orange, Palette.yellow, Palette.green, Color(hex: 0x0A84FF), Palette.red], center: .center))
+                .frame(width: 24, height: 24)
+                .padding(3)
+                .overlay(Circle().strokeBorder(tint == nil ? Color.accentColor : .clear, lineWidth: 2))
+                .contentShape(Circle())
+                .onTapGesture { tint = nil }
+                .help("Default")
+            SwatchPicker(tint: Binding(get: { tint ?? .white }, set: { tint = $0 }), showsSelection: tint != nil)
+        }
+    }
+}
+
 struct SwatchPicker: View {
     @Binding var tint: Tint
+    var showsSelection = true
 
     var body: some View {
         HStack(spacing: 10) {
@@ -617,7 +648,7 @@ struct SwatchPicker: View {
                     .frame(width: 24, height: 24)
                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.15)))
                     .padding(3)
-                    .overlay(Circle().strokeBorder(t == tint ? Color.accentColor : .clear, lineWidth: 2))
+                    .overlay(Circle().strokeBorder(showsSelection && t == tint ? Color.accentColor : .clear, lineWidth: 2))
                     .contentShape(Circle())
                     .onTapGesture { tint = t }
                     .help(t.title)

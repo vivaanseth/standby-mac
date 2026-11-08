@@ -284,6 +284,7 @@ struct FlipClockWidget: View {
 struct WordClockWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
 
     private static let grid = [
         "ITLISASAMPM", "ACQUARTERDC", "TWENTYFIVEX", "HALFSTENFTO", "PASTERUNINE",
@@ -310,7 +311,7 @@ struct WordClockWidget: View {
                             let on = lit.contains(r * 100 + c)
                             Text(String(Self.grid[r][c]))
                                 .font(.system(size: 11.5 * u, weight: on ? .heavy : .medium, design: .rounded))
-                                .foregroundStyle(on ? Color.white : Color(white: 0.2))
+                                .foregroundStyle(on ? (tint?.light ?? Color.white) : Color(white: 0.2))
                                 .shadow(color: on ? .white.opacity(0.5) : .clear, radius: 3 * u)
                                 .frame(width: 12.2 * u)
                         }
@@ -365,6 +366,10 @@ struct WordClockWidget: View {
 struct TimeRingsWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
+
+    /// Activity colors, or three shades of the widget color.
+    private var colors: [Color] { tint.map { [$0.light, $0.base, $0.deep] } ?? Self.colors }
 
     private static let colors = [Color(hex: 0xFA114F), Color(hex: 0xA6FF00), Color(hex: 0x00E5F0)]
 
@@ -375,7 +380,7 @@ struct TimeRingsWidget: View {
             ZStack {
                 ForEach(0..<3, id: \.self) { i in
                     let inset = CGFloat(i) * 16 * u
-                    ActivityRing(progress: values[i], color: Self.colors[i], width: 13 * u)
+                    ActivityRing(progress: values[i], color: colors[i], width: 13 * u)
                         .padding(inset)
                 }
             }
@@ -385,7 +390,7 @@ struct TimeRingsWidget: View {
                     VStack(spacing: 1 * u) {
                         Text(labels[i])
                             .font(.system(size: 8.5 * u, weight: .heavy))
-                            .foregroundStyle(Self.colors[i])
+                            .foregroundStyle(colors[i])
                         Text("\(Int(values[i] * 100))%")
                             .font(.system(size: 13 * u, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white)
@@ -427,6 +432,7 @@ struct ActivityRing: View {
 // MARK: Countdown
 
 struct CountdownWidget: View {
+    @Environment(\.widgetTint) private var tint
     var date: Date
     var u: CGFloat
     var title: String
@@ -453,7 +459,8 @@ struct CountdownWidget: View {
                 }
             }
             .font(.system(size: (days > 0 || days < 0 ? 70 : 40) * u, weight: .heavy, design: .rounded))
-            .foregroundStyle(LinearGradient(colors: [Color(hex: 0xFFB340), Color(hex: 0xFF375F)], startPoint: .top, endPoint: .bottom))
+            .foregroundStyle(LinearGradient(colors: tint.map { [$0.light, $0.base] } ?? [Color(hex: 0xFFB340), Color(hex: 0xFF375F)],
+                                            startPoint: .top, endPoint: .bottom))
             .lineLimit(1)
             .minimumScaleFactor(0.4)
             .contentTransition(.numericText())
@@ -474,6 +481,7 @@ struct CountdownWidget: View {
 // MARK: Note
 
 struct NoteWidget: View {
+    @Environment(\.widgetTint) private var tint
     var u: CGFloat
     var text: String
 
@@ -481,7 +489,7 @@ struct NoteWidget: View {
         VStack(alignment: .leading, spacing: 8 * u) {
             Label("Note", systemImage: "note.text")
                 .font(.system(size: 12 * u, weight: .bold))
-                .foregroundStyle(Palette.yellow)
+                .foregroundStyle(tint?.base ?? Palette.yellow)
             if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("Write a note in Standby Settings → Widgets.")
                     .font(.system(size: 13 * u, weight: .medium))
@@ -503,14 +511,15 @@ struct NoteWidget: View {
 // MARK: Mac Activity
 
 struct MacStatsWidget: View {
+    @Environment(\.widgetTint) private var tint
     var u: CGFloat
     @EnvironmentObject private var power: PowerService
 
     var body: some View {
         VStack(spacing: 12 * u) {
             HStack(spacing: 14 * u) {
-                gauge("CPU", power.cpu, [Color(hex: 0x64D2FF), Color(hex: 0x0A84FF)])
-                gauge("MEMORY", power.memory, [Color(hex: 0xDA8FFF), Color(hex: 0xBF5AF2)])
+                gauge("CPU", power.cpu, tint.map { [$0.light, $0.base] } ?? [Color(hex: 0x64D2FF), Color(hex: 0x0A84FF)])
+                gauge("MEMORY", power.memory, tint.map { [$0.base, $0.deep] } ?? [Color(hex: 0xDA8FFF), Color(hex: 0xBF5AF2)])
             }
             Text("Up \(Self.uptime(ProcessInfo.processInfo.systemUptime))")
                 .font(.system(size: 11 * u, weight: .semibold))

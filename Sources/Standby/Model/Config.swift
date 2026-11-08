@@ -150,6 +150,7 @@ struct DisplayProfile: Codable, Equatable {
     var stackCount = 2
     var widgetLayout: WidgetLayout = .grid
     var showWidgetBackgrounds = false
+    var widgetTint: Tint?
     var clockStyles: [ClockSlot] = ClockStyle.allCases.map { ClockSlot(style: $0, enabled: true) }
     var digitalTint: Tint = .red
     var analogTint: Tint = .orange
@@ -307,6 +308,8 @@ struct StandbyConfig: Codable, Equatable {
     var smartRotate = true
     var smartRotateMinutes = 10
     var showWidgetBackgrounds = false
+    /// nil keeps Apple's widget colors.
+    var widgetTint: Tint?
     var worldClockZones = ["America/Los_Angeles", "America/New_York", "Europe/London", "Asia/Tokyo"]
 
     // Clock
@@ -421,6 +424,7 @@ struct StandbyConfig: Codable, Equatable {
         p.stackCount = stackCount
         p.widgetLayout = widgetLayout
         p.showWidgetBackgrounds = showWidgetBackgrounds
+        p.widgetTint = widgetTint
         p.clockStyles = clockStyles
         p.digitalTint = digitalTint
         p.analogTint = analogTint

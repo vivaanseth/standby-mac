@@ -143,6 +143,17 @@ enum Renderer {
                 .frame(width: 1440, height: 900), scale: 1, to: dir.appendingPathComponent("dial-\(page.rawValue).png"))
         }
 
+        // Widgets in a custom color.
+        var themed = base
+        themed.widgetTint = .teal
+        themed.stackCount = 6
+        themed.stacks = [[.calendarMonth], [.rings], [.analogClock], [.countdown], [.macStats], [.wordClock]].map { StandbyConfig.stack(enabled: $0) }
+        let tn = StandbyNavigator()
+        tn.apply(themed)
+        write(StandbyScene(date: date, config: themed, nav: tn)
+            .environmentObject(weather).environmentObject(calendar).environmentObject(photos).environmentObject(power)
+            .frame(width: 1440, height: 900), scale: 1, to: dir.appendingPathComponent("widgets-themed.png"))
+
         // Sky on the built-in display.
         var builtInSky = base
         builtInSky.showSky = true

@@ -18,6 +18,7 @@ struct WidgetView: View {
             content(u)
         }
         .frame(width: side, height: side)
+        .environment(\.widgetTint, config.widgetTint)
     }
 
     @ViewBuilder
@@ -41,7 +42,7 @@ struct WidgetView: View {
         case .note: NoteWidget(u: u, text: config.noteText)
         case .macStats: MacStatsWidget(u: u)
         case .analogFace:
-            AnalogDial(date: date, style: .analogFace(config.analogTint))
+            AnalogDial(date: date, style: .analogFace(config.widgetTint ?? config.analogTint))
                 .padding(3 * u)
         }
     }
@@ -50,9 +51,11 @@ struct WidgetView: View {
 struct AnalogClockWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
 
     var body: some View {
         var style = DialStyle.widget
+        style.second = tint?.base ?? Palette.orange
         style.label = ZoneInfo.abbreviation(for: TimeZone.current.identifier)
         return AnalogDial(date: date, style: style)
             .padding(4 * u)
@@ -62,6 +65,7 @@ struct AnalogClockWidget: View {
 struct CalendarMonthWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
 
     var body: some View {
         let cal = Calendar.current
@@ -76,7 +80,7 @@ struct CalendarMonthWidget: View {
         VStack(alignment: .leading, spacing: 5 * u) {
             Text(TimeText.format(date, "MMMM").uppercased())
                 .font(.system(size: 12 * u, weight: .bold))
-                .foregroundStyle(Palette.red)
+                .foregroundStyle((tint?.base ?? Palette.red))
                 .padding(.leading, 3 * u)
             Grid(horizontalSpacing: 0, verticalSpacing: 2 * u) {
                 GridRow {
@@ -93,7 +97,7 @@ struct CalendarMonthWidget: View {
                             if let day = weeks[w][i] {
                                 ZStack {
                                     if day == today {
-                                        Circle().fill(Palette.red).frame(width: 19 * u, height: 19 * u)
+                                        Circle().fill((tint?.base ?? Palette.red)).frame(width: 19 * u, height: 19 * u)
                                     }
                                     Text("\(day)")
                                         .font(.system(size: 11 * u, weight: day == today ? .bold : .semibold))
@@ -126,13 +130,14 @@ struct CalendarMonthWidget: View {
 struct UpNextWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
     @EnvironmentObject private var calendar: CalendarService
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(TimeText.format(date, "EEEE").uppercased())
                 .font(.system(size: 11 * u, weight: .bold))
-                .foregroundStyle(Palette.red)
+                .foregroundStyle((tint?.base ?? Palette.red))
             Text("\(Calendar.current.component(.day, from: date))")
                 .font(.system(size: 40 * u, weight: .regular))
                 .foregroundStyle(.white)
@@ -175,12 +180,13 @@ struct UpNextWidget: View {
 struct DateWidget: View {
     var date: Date
     var u: CGFloat
+    @Environment(\.widgetTint) private var tint
 
     var body: some View {
         VStack(spacing: 0) {
             Text(TimeText.format(date, "EEEE").uppercased())
                 .font(.system(size: 15 * u, weight: .bold))
-                .foregroundStyle(Palette.red)
+                .foregroundStyle((tint?.base ?? Palette.red))
             Text("\(Calendar.current.component(.day, from: date))")
                 .font(.system(size: 92 * u, weight: .light))
                 .foregroundStyle(.white)
@@ -222,6 +228,7 @@ struct WorldClockWidget: View {
     var date: Date
     var u: CGFloat
     var zones: [String]
+    @Environment(\.widgetTint) private var tint
 
     var body: some View {
         let shown = Array(zones.compactMap { TimeZone(identifier: $0) }.prefix(4))
@@ -244,7 +251,11 @@ struct WorldClockWidget: View {
         let hour = cal.component(.hour, from: date)
         let isDay = (6..<18).contains(hour)
         return VStack(spacing: 3 * u) {
-            AnalogDial(date: date, timeZone: zone, style: .worldClock(isDay: isDay))
+            AnalogDial(date: date, timeZone: zone, style: {
+                var style = DialStyle.worldClock(isDay: isDay)
+                style.second = tint?.base ?? Palette.orange
+                return style
+            }())
                 .frame(width: 50 * u, height: 50 * u)
             Text(ZoneInfo.cityName(for: zone.identifier))
                 .font(.system(size: 10.5 * u, weight: .semibold))

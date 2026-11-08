@@ -23,6 +23,7 @@ extension StandbyConfig {
         c.stackCount = p.stackCount
         c.widgetLayout = p.widgetLayout
         c.showWidgetBackgrounds = p.showWidgetBackgrounds
+        c.widgetTint = p.widgetTint
         c.clockStyles = p.clockStyles
         c.digitalTint = p.digitalTint
         c.analogTint = p.analogTint
